@@ -22,9 +22,10 @@ let lastTime = 0;
 let discoveryTimer = 0;
 let quoteTimer = 0;
 let saveTimer = 0;
+let progressTimer = 0;
 let ambientTimer = 0;
+let shopRefreshTimer = 0;
 let isOverlayActive = false;
-let shopDirty = false;
 
 // ─── Codex state ───
 let combineSlotA = null;
@@ -109,9 +110,10 @@ function gameLoop(timestamp) {
       }
     }
 
-    // Progress checks (every second, not every frame)
-    saveTimer += dt;
-    if (saveTimer >= 1) {
+    // Progress checks (every 2 seconds)
+    progressTimer += dt;
+    if (progressTimer >= 2) {
+      progressTimer = 0;
       const newObjectives = checkObjectives(state);
       const newAchievements = checkAchievements(state);
       for (const obj of newObjectives) showToast(`Objective: ${obj}`, 'achievement');
@@ -123,9 +125,16 @@ function gameLoop(timestamp) {
         renderStats();
         updateObjectives(state);
       }
+    }
 
-      // Mark shop dirty if resources changed enough
-      shopDirty = true;
+    // Refresh shop affordability (every 3 seconds)
+    shopRefreshTimer += dt;
+    if (shopRefreshTimer >= 3) {
+      shopRefreshTimer = 0;
+      const upgradesPanel = document.getElementById('panel-upgrades');
+      if (upgradesPanel && upgradesPanel.classList.contains('active')) {
+        renderAllShops();
+      }
     }
 
     // Quote rotation
@@ -144,6 +153,7 @@ function gameLoop(timestamp) {
     }
 
     // Save every 10 seconds
+    saveTimer += dt;
     if (saveTimer >= 10) {
       saveTimer = 0;
       save(state);
@@ -206,11 +216,7 @@ function setupEventListeners() {
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('pointerup', () => {
       switchPanel(btn.dataset.panel);
-      // Refresh shop when switching to upgrades panel
-      if (btn.dataset.panel === 'upgrades' && shopDirty) {
-        renderAllShops();
-        shopDirty = false;
-      }
+      if (btn.dataset.panel === 'upgrades') renderAllShops();
       if (btn.dataset.panel === 'stats') renderStats();
       if (btn.dataset.panel === 'codex') renderCodex();
     });

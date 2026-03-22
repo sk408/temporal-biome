@@ -7,7 +7,9 @@ function getDiscoverablePool(state) {
 }
 
 export function getDiscoveryChance(state) {
-  let chance = 0.15;
+  // Higher chance early, normalizes as more species are found
+  const found = state.discoveredSpecies?.length || 0;
+  let chance = found < 3 ? 0.35 : 0.15;
   const affinityLevel = state.multipliers?.speciesAffinity || 0;
   chance *= (1 + affinityLevel * 0.1);
   const instinctLevel = state.permanentUpgrades?.speciesInstinct || 0;
@@ -27,7 +29,9 @@ export function runDiscoveryCheck(state, forceRoll = null) {
 }
 
 export function getDiscoveryInterval(state) {
-  let interval = 45;
+  // Faster checks early when few species found, slows as you discover more
+  const found = state.discoveredSpecies.length;
+  let interval = found < 2 ? 15 : found < 4 ? 25 : 45;
   if (state.automation?.discoveryDrone) interval /= 2;
   const instinctLevel = state.permanentUpgrades?.speciesInstinct || 0;
   interval /= (1 + instinctLevel * 0.25);

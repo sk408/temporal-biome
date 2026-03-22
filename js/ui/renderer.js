@@ -1,6 +1,7 @@
 import { formatNum } from '../engine/utils.js';
 import { getCatastrophePhase, getCatastropheProgress } from '../engine/catastrophe.js';
 import { getChapterObjectives } from '../engine/progress.js';
+import { getTotalProduction } from '../engine/economy.js';
 
 export function updateResourceBar(state) {
   const trEl = document.getElementById('tr-count');
@@ -8,11 +9,16 @@ export function updateResourceBar(state) {
   const tokenEl = document.getElementById('token-count');
   const shardEl = document.getElementById('shard-count');
   const loopEl = document.getElementById('loop-count');
+  const rateEl = document.getElementById('tr-rate');
   if (trEl) trEl.textContent = formatNum(state.residue);
   if (emEl) emEl.textContent = formatNum(state.echoMatter);
   if (tokenEl) tokenEl.textContent = formatNum(state.anomalyTokens || 0);
   if (shardEl) shardEl.textContent = formatNum(state.memoryShards || 0);
   if (loopEl) loopEl.textContent = state.loop;
+  if (rateEl) {
+    const prod = getTotalProduction(state);
+    rateEl.textContent = prod > 0 ? `(${formatNum(prod)}/s)` : '';
+  }
 }
 
 export function updateCatastropheBar(state) {

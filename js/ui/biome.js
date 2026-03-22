@@ -5,8 +5,9 @@ let placedCreatures = {};
 
 export function renderBiome(state, svgEl) {
   if (!svgEl) return;
-  const w = svgEl.clientWidth || 400;
-  const h = svgEl.clientHeight || 300;
+  const rect = svgEl.getBoundingClientRect();
+  const w = rect.width || svgEl.clientWidth || 400;
+  const h = rect.height || svgEl.clientHeight || 300;
   svgEl.setAttribute('viewBox', `0 0 ${w} ${h}`);
   svgEl.innerHTML = '';
 
@@ -103,8 +104,9 @@ export function renderAnomalies(state, svgEl) {
   // Remove old anomaly elements
   svgEl.querySelectorAll('.anomaly-svg').forEach(el => el.remove());
 
-  const w = svgEl.clientWidth || 400;
-  const h = svgEl.clientHeight || 300;
+  const rect2 = svgEl.getBoundingClientRect();
+  const w = rect2.width || svgEl.clientWidth || 400;
+  const h = rect2.height || svgEl.clientHeight || 300;
   const anomalies = state.activeAnomalies || [];
 
   for (const a of anomalies) {
@@ -154,19 +156,13 @@ export function renderAnomalies(state, svgEl) {
         });
     }
 
-    // Pulse animation
-    const pulseAnim = createSVG('animateTransform', {
-      attributeName: 'transform',
-      type: 'scale',
-      values: '1;1.15;1',
-      dur: '1.5s',
-      repeatCount: 'indefinite',
-      additive: 'sum',
-    });
     if (shape) {
-      shape.appendChild(pulseAnim);
       g.appendChild(shape);
     }
+    // Use CSS animation for pulsing instead of SVG animateTransform
+    // (SVG scale transforms from origin, breaking positioning)
+    g.style.transformOrigin = `${ax}px ${ay}px`;
+    g.style.animation = `breathe ${1.5 + Math.random()}s ease-in-out infinite`;
     svgEl.appendChild(g);
   }
 }

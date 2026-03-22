@@ -95,6 +95,7 @@ html, body {
 #res-shards .res-icon { color: var(--purple); }
 #res-loop { color: var(--text-dim); font-size: 0.8rem; }
 #tr-count { color: var(--accent); font-weight: bold; text-shadow: var(--glow-accent); }
+.res-rate { font-size: 0.65rem; color: var(--text-dim); font-weight: normal; }
 #em-count { color: var(--purple); font-weight: bold; text-shadow: var(--glow-purple); }
 #token-count { color: var(--amber); font-weight: bold; }
 #shard-count { color: var(--purple); font-weight: bold; }
@@ -657,8 +658,8 @@ html, body {
   50% { transform: translateY(-6px); }
 }
 @keyframes breathe {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
 }
 @keyframes ripple {
   0% { transform: scale(1); opacity: 0.5; }
