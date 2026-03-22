@@ -52,8 +52,12 @@ export function showLoopSummary(stats, callback) {
 
   overlay.innerHTML = `
     <div class="loop-summary-title">Loop ${stats.loop} Complete</div>
-    <div class="loop-summary-stat">Temporal Residue earned: <span>${formatNum(stats.trEarned)}</span></div>
-    <div class="loop-summary-stat">Species discovered: <span>${stats.speciesFound}</span></div>
+    <div class="loop-summary-stats">
+      <div class="loop-summary-stat">TR earned <span>${formatNum(stats.trEarned)}</span></div>
+      <div class="loop-summary-stat">Species found <span>${stats.speciesFound} (${stats.totalSpecies} total)</span></div>
+      <div class="loop-summary-stat">Objectives <span>${stats.objectivesCompleted}</span></div>
+      <div class="loop-summary-stat">Tokens earned <span>${stats.tokensEarned}</span></div>
+    </div>
     <div class="loop-summary-em">+${formatNum(stats.emEarned)} Echo Matter</div>
     <button class="loop-summary-btn">Continue</button>
   `;

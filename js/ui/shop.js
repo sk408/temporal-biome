@@ -1,6 +1,6 @@
 import { formatNum } from '../engine/utils.js';
 import { GENERATORS, MILESTONES } from '../data/generators.js';
-import { MULTIPLIERS, AUTOMATION, PERMANENT_UPGRADES } from '../data/upgrades.js';
+import { MULTIPLIERS, AUTOMATION, PERMANENT_UPGRADES, MARKET_PERMANENT, getRotatingStock } from '../data/upgrades.js';
 import { getCost, getGeneratorCost, canAfford } from '../engine/economy.js';
 
 export function renderGenerators(state, container, purchaseFn, refreshFn) {
@@ -133,7 +133,55 @@ export function renderPermanentUpgrades(state, container, purchaseFn, refreshFn)
   }
 }
 
-export function renderMarketplace(state, container) {
-  if (!container) return;
-  container.innerHTML = '<div class="buy-detail" style="padding:8px;text-align:center;color:#6a7a8a;">The marketplace opens in later chapters...</div>';
+export function renderMarketplace(state, permContainer, rotContainer, purchaseFn) {
+  if (permContainer) {
+    permContainer.innerHTML = '';
+    for (const [itemId, def] of Object.entries(MARKET_PERMANENT)) {
+      const currencySymbol = def.currency === 'anomalyTokens' ? '★' : '♦';
+      const affordable = canAfford(state, def.cost, def.currency);
+      const row = document.createElement('div');
+      row.className = `buy-row${affordable ? '' : ' disabled'}`;
+      row.innerHTML = `
+        <div class="buy-info">
+          <div class="buy-name">${def.name}</div>
+          <div class="buy-detail">${def.desc}</div>
+        </div>
+        <span class="buy-cost ${affordable ? 'affordable' : 'unaffordable'}">${def.cost} ${currencySymbol}</span>
+      `;
+      if (affordable) {
+        row.addEventListener('pointerup', (e) => {
+          e.stopPropagation();
+          purchaseFn(itemId, def);
+        });
+      }
+      permContainer.appendChild(row);
+    }
+  }
+
+  if (rotContainer) {
+    rotContainer.innerHTML = '';
+    const connectionsLevel = state.permanentUpgrades?.marketConnections || 0;
+    const rotating = getRotatingStock(state.marketRotationSeed || 0, connectionsLevel);
+    for (const def of rotating) {
+      const purchased = (state.marketPurchasedThisLoop || []).includes(def.id);
+      const currencySymbol = def.currency === 'anomalyTokens' ? '★' : '♦';
+      const affordable = !purchased && canAfford(state, def.cost, def.currency);
+      const row = document.createElement('div');
+      row.className = `buy-row${purchased ? ' disabled' : (affordable ? '' : ' disabled')}`;
+      row.innerHTML = `
+        <div class="buy-info">
+          <div class="buy-name">${def.name}</div>
+          <div class="buy-detail">${def.desc}</div>
+        </div>
+        <span class="buy-cost ${purchased ? '' : (affordable ? 'affordable' : 'unaffordable')}">${purchased ? 'SOLD' : def.cost + ' ' + currencySymbol}</span>
+      `;
+      if (affordable && !purchased) {
+        row.addEventListener('pointerup', (e) => {
+          e.stopPropagation();
+          purchaseFn(def.id, def);
+        });
+      }
+      rotContainer.appendChild(row);
+    }
+  }
 }

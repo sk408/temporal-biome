@@ -1,6 +1,6 @@
 // js/main.js — Entry point and game loop
 import { createState, load, save, resetLoop, calcOfflineProgressWithRate } from './engine/state.js';
-import { getTotalProduction, getTapValue, calcEchoMatter, purchaseGenerator, purchaseMultiplier, purchaseAutomation, purchasePermanentUpgrade } from './engine/economy.js';
+import { getTotalProduction, getTapValue, calcEchoMatter, purchaseGenerator, purchaseMultiplier, purchaseAutomation, purchasePermanentUpgrade, canAfford } from './engine/economy.js';
 import { tickCatastrophe, getCatastrophePhase, getCatastropheProgress } from './engine/catastrophe.js';
 import { runDiscoveryCheck, discoverSpecies, tryCombination, getDiscoveryInterval } from './engine/discovery.js';
 import { updateAnomalies, tapAnomaly, getActiveAnomalies } from './engine/anomalies.js';
@@ -81,6 +81,12 @@ function gameLoop(timestamp) {
     const catResult = tickCatastrophe(state, dt);
     if (catResult === 'trigger') {
       triggerCatastrophe();
+    }
+
+    // Buff tick — decrement active buff timers
+    if (state.activeBuffs.length > 0) {
+      for (const buff of state.activeBuffs) buff.remaining -= dt;
+      state.activeBuffs = state.activeBuffs.filter(b => b.remaining > 0);
     }
 
     // Anomaly tick
@@ -182,8 +188,13 @@ function triggerCatastrophe() {
   const stats = {
     trEarned: state.trEarnedThisLoop,
     speciesFound: state.speciesDiscoveredThisLoop,
+    objectivesCompleted: state.objectivesCompletedThisLoop,
+    anomaliesTapped: state.totalAnomaliesTapped || 0,
+    tokensEarned: state.anomalyTokensEarnedThisLoop,
     emEarned,
     loop: state.loop + 1,
+    totalSpecies: state.discoveredSpecies.length,
+    totalAchievements: state.achievements.length,
   };
 
   showCatastrophe(() => {
@@ -263,9 +274,19 @@ function handleBiomeTap(e) {
     if (dist < hitRadius) {
       const reward = tapAnomaly(state, a.id);
       if (reward) {
-        const color = reward.type === 'anomalyTokens' ? '#f0c860' : reward.type === 'memoryShards' ? '#b088f0' : '#7af8d4';
-        spawnBurst(x, y, 12, color);
-        const label = reward.type === 'anomalyTokens' ? `+${reward.amount} ★` : reward.type === 'memoryShards' ? `+${reward.amount} ♦` : `+${formatNum(reward.amount)} TR`;
+        let color, label;
+        if (reward.type === 'rift') {
+          color = '#ff66ff';
+          spawnBurst(x, y, 24, '#ff66ff');
+          spawnBurst(x, y, 16, '#66ffff');
+          spawnBurst(x, y, 12, '#ffff66');
+          label = `RIFT! +${formatNum(reward.amount)} TR +${reward.tokenBonus}★ +${reward.shardBonus}♦`;
+          showToast('Temporal Rift tapped! Mega-reward!', 'discovery');
+        } else {
+          color = reward.type === 'anomalyTokens' ? '#f0c860' : reward.type === 'memoryShards' ? '#b088f0' : '#7af8d4';
+          spawnBurst(x, y, 12, color);
+          label = reward.type === 'anomalyTokens' ? `+${reward.amount} ★` : reward.type === 'memoryShards' ? `+${reward.amount} ♦` : `+${formatNum(reward.amount)} TR`;
+        }
         spawnFloatingNumber(x, y - 20, label, color);
 
         // Show chain
@@ -459,12 +480,72 @@ function renderStats() {
 import { getAchievementDefs as _getAchievementDefs } from './engine/progress.js';
 const _achievementDefs = _getAchievementDefs();
 
+function handleMarketPurchase(itemId, def) {
+  if (!canAfford(state, def.cost, def.currency)) return;
+  state[def.currency] -= def.cost;
+
+  if (def.buffId) {
+    // Add/refresh a timed buff
+    const existing = state.activeBuffs.findIndex(b => b.id === def.buffId);
+    if (existing >= 0) {
+      state.activeBuffs[existing].remaining = def.buffDuration;
+    } else {
+      state.activeBuffs.push({ id: def.buffId, remaining: def.buffDuration });
+    }
+    showToast(`${def.name} activated!`, 'achievement');
+  } else if (def.action === 'discoverRandom') {
+    const discovered = runDiscoveryCheck(state, 0.0); // force success
+    if (discovered) {
+      discoverSpecies(state, discovered);
+      const species = SPECIES[discovered];
+      isOverlayActive = true;
+      showDiscovery(species, () => {
+        isOverlayActive = false;
+        renderBiome(state, document.getElementById('biome-svg'));
+        renderCodex();
+        showToast(`Discovered: ${species.name}`, 'discovery');
+      });
+    } else {
+      showToast('No new species to discover right now', 'story');
+    }
+  } else if (def.action === 'grantTR') {
+    state.residue += def.actionValue;
+    state.trEarnedThisLoop += def.actionValue;
+    showToast(`+${formatNum(def.actionValue)} TR!`, 'achievement');
+  } else if (def.action === 'spawnAnomalies') {
+    for (let i = 0; i < def.actionValue; i++) {
+      updateAnomalies(state, 0); // just to init
+      state.activeAnomalies.push({
+        id: 'market' + Date.now() + i,
+        type: ['residue', 'token', 'fragment'][i % 3],
+        x: 0.1 + Math.random() * 0.8,
+        y: 0.1 + Math.random() * 0.7,
+        spawnTime: Date.now(),
+        lifetime: 8,
+        age: 0,
+      });
+    }
+    showToast('Anomaly flood!', 'achievement');
+  } else if (def.action === 'setChain') {
+    state.anomalyChain = def.actionValue;
+    state.anomalyChainExpiry = Date.now() + 10000;
+    showToast(`Chain set to ${def.actionValue}x!`, 'achievement');
+  }
+
+  // Track rotating purchases
+  if (!state.marketPurchasedThisLoop) state.marketPurchasedThisLoop = [];
+  state.marketPurchasedThisLoop.push(itemId);
+
+  renderAllShops();
+  updateResourceBar(state);
+}
+
 function renderAllShops() {
   renderGenerators(state, document.getElementById('generators-list'), purchaseGenerator, renderAllShops);
   renderMultipliers(state, document.getElementById('multipliers-list'), purchaseMultiplier, renderAllShops);
   renderAutomation(state, document.getElementById('automation-list'), purchaseAutomation, renderAllShops);
   renderPermanentUpgrades(state, document.getElementById('permanent-list'), purchasePermanentUpgrade, renderAllShops);
-  renderMarketplace(state, document.getElementById('market-permanent-list'));
+  renderMarketplace(state, document.getElementById('market-permanent-list'), document.getElementById('market-rotating-list'), handleMarketPurchase);
 }
 
 function updateAllUI() {

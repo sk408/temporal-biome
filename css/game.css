@@ -89,6 +89,26 @@ html, body {
   font-size: 0.9rem;
 }
 .res-icon { font-size: 0.75rem; }
+
+/* ─── Buff Bar ─── */
+#buff-bar {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: rgba(15, 20, 35, 0.7);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.buff-pill {
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(122, 248, 212, 0.15);
+  border: 1px solid rgba(122, 248, 212, 0.3);
+  color: var(--accent);
+  letter-spacing: 0.5px;
+}
 #res-tr .res-icon { color: var(--accent); }
 #res-em .res-icon { color: var(--purple); }
 #res-tokens .res-icon { color: var(--amber); }
@@ -176,6 +196,29 @@ html, body {
 #catastrophe-bar.critical #catastrophe-fill {
   background: linear-gradient(90deg, var(--coral), var(--danger));
   animation: pulse-bar 0.5s ease-in-out infinite;
+}
+
+/* Catastrophe screen tint overlay */
+#catastrophe-tint {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 3;
+  transition: opacity 1s ease, background 1s ease;
+  opacity: 0;
+}
+#catastrophe-tint.warning {
+  opacity: 1;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(240, 96, 128, 0.06) 100%);
+}
+#catastrophe-tint.critical {
+  opacity: 1;
+  background: radial-gradient(ellipse at center, transparent 20%, rgba(255, 50, 50, 0.12) 100%);
+  animation: tint-pulse 2s ease-in-out infinite;
+}
+@keyframes tint-pulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
 }
 #catastrophe-label {
   position: absolute;
@@ -512,10 +555,17 @@ html, body {
   text-shadow: var(--glow-coral);
   margin-bottom: 20px;
 }
+.loop-summary-stats {
+  width: 100%;
+  max-width: 260px;
+  margin: 0 auto 8px;
+}
 .loop-summary-stat {
-  font-size: 0.9rem;
-  color: var(--text);
-  margin: 6px 0;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin: 4px 0;
+  display: flex;
+  justify-content: space-between;
 }
 .loop-summary-stat span {
   color: var(--accent);

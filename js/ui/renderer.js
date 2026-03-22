@@ -19,12 +19,28 @@ export function updateResourceBar(state) {
     const prod = getTotalProduction(state);
     rateEl.textContent = prod > 0 ? `(${formatNum(prod)}/s)` : '';
   }
+
+  // Active buff indicators
+  const buffBar = document.getElementById('buff-bar');
+  if (buffBar) {
+    if (state.activeBuffs.length === 0) {
+      buffBar.style.display = 'none';
+    } else {
+      buffBar.style.display = 'flex';
+      buffBar.innerHTML = state.activeBuffs.map(b => {
+        const secs = Math.ceil(b.remaining);
+        const names = { temporalAnchor: '⏸ Anchor', nurturePulse: '⚡ 2x', productionSurge: '⚡ 5x', echoCatalyst: '✦ Echo+' };
+        return `<span class="buff-pill">${names[b.id] || b.id} ${secs < 9999 ? secs + 's' : ''}</span>`;
+      }).join('');
+    }
+  }
 }
 
 export function updateCatastropheBar(state) {
   const bar = document.getElementById('catastrophe-bar');
   const fill = document.getElementById('catastrophe-fill');
   const label = document.getElementById('catastrophe-label');
+  const tint = document.getElementById('catastrophe-tint');
   if (!bar || !fill) return;
 
   const progress = getCatastropheProgress(state);
@@ -41,6 +57,13 @@ export function updateCatastropheBar(state) {
     else if (phase === 'building') label.textContent = 'The fog stirs...';
     else if (phase === 'warning') label.textContent = 'FOG APPROACHING';
     else label.textContent = 'CATASTROPHE IMMINENT';
+  }
+
+  // Screen tint effect
+  if (tint) {
+    tint.className = '';
+    if (phase === 'warning') tint.className = 'warning';
+    else if (phase === 'critical') tint.className = 'critical';
   }
 }
 

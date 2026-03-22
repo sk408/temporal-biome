@@ -53,4 +53,16 @@ describe('tapAnomaly', () => {
     tapAnomaly(s, 't1');
     assert.strictEqual(s.totalAnomaliesTapped, 1);
   });
+  it('rift anomaly rewards TR, tokens, and shards', () => {
+    const s = createState();
+    s.activeAnomalies = [{ id: 'rift1', type: 'rift', x: 0.5, y: 0.5, spawnTime: Date.now(), lifetime: 10, age: 0 }];
+    const reward = tapAnomaly(s, 'rift1');
+    assert.strictEqual(reward.type, 'rift');
+    assert.ok(reward.amount > 0);
+    assert.ok(reward.tokenBonus > 0);
+    assert.ok(reward.shardBonus > 0);
+    assert.ok(s.residue > 0);
+    assert.ok(s.anomalyTokens > 0);
+    assert.ok(s.memoryShards > 0);
+  });
 });

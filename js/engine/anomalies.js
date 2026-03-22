@@ -5,6 +5,7 @@ const ANOMALY_TYPES = [
   { type: 'token', weight: 20, reward: 'anomalyTokens', baseValue: 1 },
   { type: 'fragment', weight: 10, reward: 'memoryShards', baseValue: 1 },
   { type: 'burst', weight: 10, reward: 'residue', baseValue: 10 },
+  { type: 'rift', weight: 0, reward: 'rift', baseValue: 0 }, // spawned separately, not in normal pool
 ];
 
 const ANOMALY_COLORS = {
@@ -12,6 +13,7 @@ const ANOMALY_COLORS = {
   token: '#f0c860',
   fragment: '#b088f0',
   burst: '#f06080',
+  rift: '#ff66ff',
 };
 
 export function getAnomalyColor(type) {
@@ -82,6 +84,17 @@ export function updateAnomalies(state, dt) {
     }
   }
 
+  // Temporal Rift spawn (ultra-rare, every 60-120 min, separate from normal pool)
+  if (!state._riftSpawnTimer) state._riftSpawnTimer = 0;
+  state._riftSpawnTimer += dt;
+  const riftInterval = 3600 + Math.sin(state.loop * 7.3) * 1800; // 60-90 min
+  if (state._riftSpawnTimer >= riftInterval) {
+    state._riftSpawnTimer = 0;
+    const rift = createAnomaly(ANOMALY_TYPES[4]); // rift type
+    rift.lifetime = 10 + Math.random() * 5; // longer visible: 10-15s
+    state.activeAnomalies.push(rift);
+  }
+
   // Cap max anomalies
   if (state.activeAnomalies.length > 20) {
     state.activeAnomalies = state.activeAnomalies.slice(-20);
@@ -110,7 +123,20 @@ export function tapAnomaly(state, anomalyId) {
   const value = Math.floor(typeDef.baseValue * chainMultiplier);
 
   // Apply reward
-  if (typeDef.reward === 'residue') {
+  if (typeDef.reward === 'rift') {
+    // Mega-reward: random combination of all resources
+    const trBonus = 50 * chainMultiplier * state.chapter;
+    const tokenBonus = 3 * chainMultiplier;
+    const shardBonus = 2 * chainMultiplier;
+    state.residue += trBonus;
+    state.trEarnedThisLoop += trBonus;
+    state.totalTrEarned += trBonus;
+    state.anomalyTokens += tokenBonus;
+    state.anomalyTokensEarnedThisLoop += tokenBonus;
+    state.memoryShards += shardBonus;
+    state.totalAnomaliesTapped = (state.totalAnomaliesTapped || 0) + 1;
+    return { type: 'rift', amount: trBonus, tokenBonus, shardBonus, chain: state.anomalyChain };
+  } else if (typeDef.reward === 'residue') {
     state.residue += value;
     state.trEarnedThisLoop += value;
     state.totalTrEarned += value;

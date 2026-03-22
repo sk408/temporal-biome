@@ -149,6 +149,24 @@ export function renderAnomalies(state, svgEl) {
         });
         g.appendChild(inner);
         break;
+      case 'rift':
+        // Rainbow pulsing rift — concentric rings
+        for (let ri = 3; ri >= 1; ri--) {
+          const riftRing = createSVG('circle', {
+            cx: ax, cy: ay, r: 6 + ri * 6,
+            fill: 'none',
+            stroke: ['#ff66ff', '#66ffff', '#ffff66'][ri - 1],
+            'stroke-width': 2,
+            opacity: 0.4 + ri * 0.15,
+            filter: 'url(#glow)',
+          });
+          g.appendChild(riftRing);
+        }
+        shape = createSVG('circle', {
+          cx: ax, cy: ay, r: 6,
+          fill: '#ffffff', opacity: 0.9, filter: 'url(#glow)',
+        });
+        break;
       default: // residue
         shape = createSVG('circle', {
           cx: ax, cy: ay, r: 10,
