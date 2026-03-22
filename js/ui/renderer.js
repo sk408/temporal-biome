@@ -5,9 +5,13 @@ import { getChapterObjectives } from '../engine/progress.js';
 export function updateResourceBar(state) {
   const trEl = document.getElementById('tr-count');
   const emEl = document.getElementById('em-count');
+  const tokenEl = document.getElementById('token-count');
+  const shardEl = document.getElementById('shard-count');
   const loopEl = document.getElementById('loop-count');
   if (trEl) trEl.textContent = formatNum(state.residue);
   if (emEl) emEl.textContent = formatNum(state.echoMatter);
+  if (tokenEl) tokenEl.textContent = formatNum(state.anomalyTokens || 0);
+  if (shardEl) shardEl.textContent = formatNum(state.memoryShards || 0);
   if (loopEl) loopEl.textContent = state.loop;
 }
 

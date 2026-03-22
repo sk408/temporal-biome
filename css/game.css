@@ -91,9 +91,13 @@ html, body {
 .res-icon { font-size: 0.75rem; }
 #res-tr .res-icon { color: var(--accent); }
 #res-em .res-icon { color: var(--purple); }
+#res-tokens .res-icon { color: var(--amber); }
+#res-shards .res-icon { color: var(--purple); }
 #res-loop { color: var(--text-dim); font-size: 0.8rem; }
 #tr-count { color: var(--accent); font-weight: bold; text-shadow: var(--glow-accent); }
 #em-count { color: var(--purple); font-weight: bold; text-shadow: var(--glow-purple); }
+#token-count { color: var(--amber); font-weight: bold; }
+#shard-count { color: var(--purple); font-weight: bold; }
 
 /* ─── Panels ─── */
 .panel {

@@ -259,7 +259,7 @@ function handleBiomeTap(e) {
       if (reward) {
         const color = reward.type === 'anomalyTokens' ? '#f0c860' : reward.type === 'memoryShards' ? '#b088f0' : '#7af8d4';
         spawnBurst(x, y, 12, color);
-        const label = reward.type === 'anomalyTokens' ? `+${reward.amount} tokens` : `+${reward.amount}`;
+        const label = reward.type === 'anomalyTokens' ? `+${reward.amount} ★` : reward.type === 'memoryShards' ? `+${reward.amount} ♦` : `+${formatNum(reward.amount)} TR`;
         spawnFloatingNumber(x, y - 20, label, color);
 
         // Show chain
