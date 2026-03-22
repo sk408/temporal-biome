@@ -2,110 +2,100 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Temporal Biome — Approach Prototypes</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    background: #0a0a1a;
-    color: #c8d8e8;
-    font-family: 'Georgia', serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem 1rem;
-  }
-  h1 {
-    font-size: 2rem;
-    color: #7fefce;
-    text-shadow: 0 0 20px rgba(127,239,206,0.5), 0 0 40px rgba(127,239,206,0.2);
-    margin-bottom: 0.5rem;
-    text-align: center;
-  }
-  .subtitle {
-    color: #8899aa;
-    font-style: italic;
-    margin-bottom: 2.5rem;
-    text-align: center;
-    font-size: 0.95rem;
-  }
-  .approaches {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    max-width: 500px;
-    width: 100%;
-  }
-  a.card {
-    display: block;
-    background: linear-gradient(135deg, #111228 0%, #0d1a2a 100%);
-    border: 1px solid #1a2a3a;
-    border-radius: 12px;
-    padding: 1.5rem;
-    text-decoration: none;
-    color: inherit;
-    transition: all 0.3s ease;
-  }
-  a.card:hover, a.card:active {
-    border-color: #3a5a7a;
-    background: linear-gradient(135deg, #151638 0%, #102030 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(127,239,206,0.1);
-  }
-  .card h2 {
-    font-size: 1.3rem;
-    margin-bottom: 0.3rem;
-  }
-  .card .label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-bottom: 0.5rem;
-    display: block;
-  }
-  .card p {
-    font-size: 0.9rem;
-    color: #8899aa;
-    line-height: 1.5;
-  }
-  .card-a h2 { color: #a78bfa; text-shadow: 0 0 15px rgba(167,139,250,0.4); }
-  .card-a .label { color: #7c6bc4; }
-  .card-b h2 { color: #34d399; text-shadow: 0 0 15px rgba(52,211,153,0.4); }
-  .card-b .label { color: #2a9d72; }
-  .card-c h2 { color: #fbbf24; text-shadow: 0 0 15px rgba(251,191,36,0.4); }
-  .card-c .label { color: #b8891a; }
-  .note {
-    margin-top: 2rem;
-    font-size: 0.8rem;
-    color: #556677;
-    text-align: center;
-    max-width: 400px;
-    line-height: 1.5;
-  }
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<title>Temporal Biome</title>
+<link rel="stylesheet" href="css/game.css">
 </head>
 <body>
-  <h1>Temporal Biome</h1>
-  <p class="subtitle">An idle game about loops, ecosystems, and confusion</p>
-  <div class="approaches">
-    <a href="approach-a/" class="card card-a">
-      <span class="label">Approach A</span>
-      <h2>The Deep Loop</h2>
-      <p>Fewer, longer loops with dramatic progression. Each run is a meaningful journey through 5 biome phases. Watch your ecosystem grow, thrive, and inevitably collapse. ~15-30 min per loop.</p>
-    </a>
-    <a href="approach-b/" class="card card-b">
-      <span class="label">Approach B</span>
-      <h2>The Rapid Cycle</h2>
-      <p>Many quick loops with fast rewards. Pick a biome, discover species rapidly, combine them, collect achievements. Loops every 2-5 minutes. Optimization and variety driven.</p>
-    </a>
-    <a href="approach-c/" class="card card-c">
-      <span class="label">Approach C</span>
-      <h2>The Chronicle</h2>
-      <p>Narrative hybrid. Loops organized into 7 Chapters, each with its own mystery. Early chapters are fast and forced. Late game unlocks loop control. Story-driven progression.</p>
-    </a>
+<div id="game">
+  <!-- Chapter Header -->
+  <header id="chapter-header">
+    <div id="chapter-label">Chapter <span id="chapter-num">1</span></div>
+    <div id="chapter-title">Primordial Soup</div>
+    <div id="chapter-subtitle">"Why do I keep waking up here?"</div>
+  </header>
+
+  <!-- Resource Bar -->
+  <div id="resource-bar">
+    <div class="resource" id="res-tr"><span class="res-icon">&#9679;</span> <span id="tr-count">0</span></div>
+    <div class="resource" id="res-em"><span class="res-icon">&#9670;</span> <span id="em-count">0</span></div>
+    <div class="resource" id="res-loop">Loop <span id="loop-count">0</span></div>
   </div>
-  <p class="note">Each prototype demonstrates the pacing and feel of its approach. Tap around, explore, let a few loops happen. Which rhythm feels right?</p>
+
+  <!-- Biome View (default panel) -->
+  <div id="panel-biome" class="panel active">
+    <div id="biome-container">
+      <svg id="biome-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+      <canvas id="particle-canvas"></canvas>
+      <div id="quote-bar"></div>
+    </div>
+    <!-- Catastrophe Bar -->
+    <div id="catastrophe-bar">
+      <div id="catastrophe-fill"></div>
+      <div id="catastrophe-label"></div>
+    </div>
+    <!-- Chapter Objectives -->
+    <div id="objectives">
+      <div id="objectives-title">Chapter Objectives</div>
+      <div id="objectives-list"></div>
+    </div>
+  </div>
+
+  <!-- Upgrades Panel -->
+  <div id="panel-upgrades" class="panel">
+    <div class="panel-scroll">
+      <div id="generators-section"><h3>Generators</h3><div id="generators-list"></div></div>
+      <div id="multipliers-section"><h3>Multipliers</h3><div id="multipliers-list"></div></div>
+      <div id="automation-section"><h3>Automation</h3><div id="automation-list"></div></div>
+      <div id="permanent-section"><h3>Permanent (Echo Matter)</h3><div id="permanent-list"></div></div>
+    </div>
+  </div>
+
+  <!-- Codex Panel -->
+  <div id="panel-codex" class="panel">
+    <div class="panel-scroll">
+      <div id="codex-species"><h3>Species</h3><div id="species-grid"></div></div>
+      <div id="codex-combine"><h3>Combine</h3>
+        <div id="combine-slots"><div id="slot-a" class="combine-slot">?</div><span>+</span><div id="slot-b" class="combine-slot">?</div></div>
+        <button id="combine-btn" disabled>Combine</button>
+        <div id="combine-result"></div>
+      </div>
+      <div id="codex-chronicle"><h3>Chronicle</h3><div id="chronicle-list"></div></div>
+    </div>
+  </div>
+
+  <!-- Market Panel -->
+  <div id="panel-market" class="panel">
+    <div class="panel-scroll">
+      <div id="market-permanent"><h3>Permanent Stock</h3><div id="market-permanent-list"></div></div>
+      <div id="market-rotating"><h3>This Loop's Offerings</h3><div id="market-rotating-list"></div></div>
+    </div>
+  </div>
+
+  <!-- Stats Panel -->
+  <div id="panel-stats" class="panel">
+    <div class="panel-scroll">
+      <div id="stats-achievements"><h3>Achievements</h3><div id="achievements-list"></div></div>
+      <div id="stats-summary"><h3>Stats</h3><div id="stats-detail"></div></div>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav id="bottom-nav">
+    <button class="nav-btn active" data-panel="biome">Biome</button>
+    <button class="nav-btn" data-panel="upgrades">Upgrades</button>
+    <button class="nav-btn" data-panel="codex">Codex</button>
+    <button class="nav-btn" data-panel="market">Market</button>
+    <button class="nav-btn" data-panel="stats">Stats</button>
+  </nav>
+</div>
+
+<!-- Overlays -->
+<div id="discovery-overlay" class="overlay"></div>
+<div id="catastrophe-overlay" class="overlay"></div>
+<div id="loop-summary-overlay" class="overlay"></div>
+<div id="toast-container"></div>
+
+<script type="module" src="js/main.js"></script>
 </body>
 </html>
