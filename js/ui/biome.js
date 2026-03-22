@@ -13,64 +13,126 @@ export function renderBiome(state, svgEl) {
 
   // Background gradient
   const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-  defs.innerHTML = `
-    <radialGradient id="bg-glow" cx="50%" cy="60%" r="60%">
-      <stop offset="0%" stop-color="#0f1a2a"/>
-      <stop offset="100%" stop-color="#060a14"/>
-    </radialGradient>
-    <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-  `;
+
+  if (state.chapter >= 2) {
+    // Ch2: Garden — earthy browns and warm greens
+    defs.innerHTML = `
+      <radialGradient id="bg-glow" cx="50%" cy="60%" r="60%">
+        <stop offset="0%" stop-color="#1a1408"/>
+        <stop offset="100%" stop-color="#0f0a04"/>
+      </radialGradient>
+      <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    `;
+  } else {
+    // Ch1: Primordial Soup — dark water
+    defs.innerHTML = `
+      <radialGradient id="bg-glow" cx="50%" cy="60%" r="60%">
+        <stop offset="0%" stop-color="#0f1a2a"/>
+        <stop offset="100%" stop-color="#060a14"/>
+      </radialGradient>
+      <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    `;
+  }
   svgEl.appendChild(defs);
 
   // Background rect
   const bg = createSVG('rect', { x: 0, y: 0, width: w, height: h, fill: 'url(#bg-glow)' });
   svgEl.appendChild(bg);
 
-  // Ground/water elements
-  for (let i = 0; i < 4; i++) {
-    const px = w * (0.15 + i * 0.22 + Math.sin(i * 2.3) * 0.05);
-    const py = h * (0.65 + Math.sin(i * 1.7) * 0.1);
-    const puddle = createSVG('ellipse', {
-      cx: px, cy: py,
-      rx: 20 + i * 8, ry: 8 + i * 3,
-      fill: 'rgba(96, 200, 240, 0.08)',
-      stroke: 'rgba(96, 200, 240, 0.06)',
-      'stroke-width': 1,
-    });
-    svgEl.appendChild(puddle);
-  }
-
-  // Rocks
-  for (let i = 0; i < 3; i++) {
-    const rx = w * (0.2 + i * 0.3);
-    const ry = h * (0.7 + Math.sin(i * 3.1) * 0.1);
-    const rock = createSVG('ellipse', {
-      cx: rx, cy: ry,
-      rx: 8 + i * 4, ry: 5 + i * 2,
-      fill: 'rgba(80, 90, 100, 0.3)',
-    });
-    svgEl.appendChild(rock);
-  }
-
-  // Ambient floating dots
-  for (let i = 0; i < 12; i++) {
-    const dot = createSVG('circle', {
-      cx: Math.random() * w,
-      cy: Math.random() * h * 0.8,
-      r: 0.5 + Math.random() * 1.5,
-      fill: `rgba(122, 248, 212, ${0.05 + Math.random() * 0.1})`,
-    });
-    const anim = createSVG('animateTransform', {
-      attributeName: 'transform',
-      type: 'translate',
-      values: `0,0;${(Math.random()-0.5)*6},${-2-Math.random()*4};0,0`,
-      dur: `${4+Math.random()*4}s`,
-      repeatCount: 'indefinite',
-    });
-    dot.appendChild(anim);
-    svgEl.appendChild(dot);
+  if (state.chapter >= 2) {
+    // Ch2: Soil mounds, grass blades, root tendrils
+    for (let i = 0; i < 5; i++) {
+      const mx = w * (0.1 + i * 0.2);
+      const my = h * (0.75 + Math.sin(i * 2.1) * 0.08);
+      const mound = createSVG('ellipse', {
+        cx: mx, cy: my, rx: 25 + i * 5, ry: 10 + i * 2,
+        fill: 'rgba(120, 80, 40, 0.15)',
+      });
+      svgEl.appendChild(mound);
+    }
+    // Grass blades
+    for (let i = 0; i < 16; i++) {
+      const gx = w * (0.05 + (i / 16) * 0.9 + Math.sin(i * 3.7) * 0.02);
+      const gy = h * (0.7 + Math.sin(i * 2.3) * 0.12);
+      const blade = createSVG('line', {
+        x1: gx, y1: gy, x2: gx + (i % 2 === 0 ? 3 : -3), y2: gy - 8 - Math.random() * 6,
+        stroke: `rgba(80, 160, 60, ${0.15 + Math.random() * 0.1})`,
+        'stroke-width': 1.5, 'stroke-linecap': 'round',
+      });
+      svgEl.appendChild(blade);
+    }
+    // Root tendrils
+    for (let i = 0; i < 3; i++) {
+      const rx = w * (0.25 + i * 0.25);
+      const ry = h * 0.85;
+      const root = createSVG('path', {
+        d: `M${rx},${ry} Q${rx + 15},${ry + 10} ${rx + 30},${ry + 5} Q${rx + 40},${ry - 5} ${rx + 50},${ry + 8}`,
+        stroke: 'rgba(140, 90, 50, 0.12)', 'stroke-width': 2, fill: 'none',
+      });
+      svgEl.appendChild(root);
+    }
+    // Floating pollen
+    for (let i = 0; i < 10; i++) {
+      const dot = createSVG('circle', {
+        cx: Math.random() * w, cy: Math.random() * h * 0.75,
+        r: 0.5 + Math.random() * 1,
+        fill: `rgba(200, 220, 80, ${0.08 + Math.random() * 0.1})`,
+      });
+      const anim = createSVG('animateTransform', {
+        attributeName: 'transform', type: 'translate',
+        values: `0,0;${(Math.random()-0.5)*8},${-3-Math.random()*5};0,0`,
+        dur: `${5+Math.random()*4}s`, repeatCount: 'indefinite',
+      });
+      dot.appendChild(anim);
+      svgEl.appendChild(dot);
+    }
+  } else {
+    // Ch1: Water elements
+    for (let i = 0; i < 4; i++) {
+      const px = w * (0.15 + i * 0.22 + Math.sin(i * 2.3) * 0.05);
+      const py = h * (0.65 + Math.sin(i * 1.7) * 0.1);
+      const puddle = createSVG('ellipse', {
+        cx: px, cy: py,
+        rx: 20 + i * 8, ry: 8 + i * 3,
+        fill: 'rgba(96, 200, 240, 0.08)',
+        stroke: 'rgba(96, 200, 240, 0.06)',
+        'stroke-width': 1,
+      });
+      svgEl.appendChild(puddle);
+    }
+    // Rocks
+    for (let i = 0; i < 3; i++) {
+      const rx = w * (0.2 + i * 0.3);
+      const ry = h * (0.7 + Math.sin(i * 3.1) * 0.1);
+      const rock = createSVG('ellipse', {
+        cx: rx, cy: ry,
+        rx: 8 + i * 4, ry: 5 + i * 2,
+        fill: 'rgba(80, 90, 100, 0.3)',
+      });
+      svgEl.appendChild(rock);
+    }
+    // Ambient floating dots
+    for (let i = 0; i < 12; i++) {
+      const dot = createSVG('circle', {
+        cx: Math.random() * w,
+        cy: Math.random() * h * 0.8,
+        r: 0.5 + Math.random() * 1.5,
+        fill: `rgba(122, 248, 212, ${0.05 + Math.random() * 0.1})`,
+      });
+      const anim = createSVG('animateTransform', {
+        attributeName: 'transform',
+        type: 'translate',
+        values: `0,0;${(Math.random()-0.5)*6},${-2-Math.random()*4};0,0`,
+        dur: `${4+Math.random()*4}s`,
+        repeatCount: 'indefinite',
+      });
+      dot.appendChild(anim);
+      svgEl.appendChild(dot);
+    }
   }
 
   // Place discovered species

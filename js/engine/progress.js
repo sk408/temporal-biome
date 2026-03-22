@@ -6,6 +6,17 @@ const CHAPTER_OBJECTIVES = {
     { id: 'survive2', desc: 'Survive 2 catastrophes', check: s => s.totalLoops >= 2 },
     { id: 'earn50Em', desc: 'Earn 50 Echo Matter', check: s => s.echoMatter >= 50 },
   ],
+  2: [
+    { id: 'ch2_discover4', desc: 'Discover 4 Chapter 2 species', check: s => s.discoveredSpecies.filter(id => {
+      // Import would be circular, so inline the Ch2 discoverable IDs
+      const ch2Species = ['rootweaver','petalfly','thornsprout','dewdrop','soilmite','vinerunner'];
+      return ch2Species.includes(id);
+    }).length >= 4 },
+    { id: 'ch2_combine2', desc: 'Create 2 combinations', check: s => (s.combinationsFound || []).length >= 2 },
+    { id: 'ch2_earn50k', desc: 'Earn 50,000 TR in a single loop', check: s => s.trEarnedThisLoop >= 50000 },
+    { id: 'ch2_gens', desc: 'Own 5 of each Ch2 generator', check: s => ['symbioticPair','gardenMatrix','growthAccelerator'].every(g => (s.generators[g] || 0) >= 5) },
+    { id: 'ch2_synergy', desc: 'Achieve a symbiosis bonus', check: s => (s._hasSynergyBonus || false) },
+  ],
 };
 
 export function getChapterObjectives(chapter) {
@@ -24,6 +35,19 @@ export function checkObjectives(state) {
     }
   }
   return newlyCompleted;
+}
+
+export function checkChapterComplete(state) {
+  const objectives = getChapterObjectives(state.chapter);
+  if (objectives.length === 0) return false;
+  return objectives.every(obj => state.chapterObjectives[obj.id]);
+}
+
+export function advanceChapter(state) {
+  state.chapter += 1;
+  state.chapterObjectives = {};
+  state.objectivesCompletedThisLoop = 0;
+  addChronicleEntry(state, `chapter${state.chapter - 1}Complete`);
 }
 
 export function checkAchievements(state) {
@@ -77,6 +101,32 @@ export function getAchievementDefs() {
     { id: 'firstPerm', name: 'Breaking the Cycle', desc: 'Buy a permanent upgrade', category: 'upgrades', check: s => Object.values(s.permanentUpgrades).some(v => v > 0) },
     { id: 'firstAuto', name: 'Hands Free', desc: 'Buy an automation upgrade', category: 'upgrades', check: s => Object.values(s.automation).some(v => v === true) },
 
+    // Discovery - Ch2
+    { id: 'firstCombo', name: 'First Combination', desc: 'Create your first combination', category: 'discovery', check: s => (s.combinationsFound || []).length >= 1 },
+    { id: 'combo5', name: 'Combination Chef', desc: 'Create 5 combinations', category: 'discovery', check: s => (s.combinationsFound || []).length >= 5 },
+    { id: 'species10', name: 'Accidental Biologist', desc: 'Discover 10 species', category: 'discovery', check: s => s.discoveredSpecies.length >= 10 },
+    { id: 'fullGarden', name: 'Full Garden', desc: 'Discover all Ch2 species', category: 'discovery', check: s => ['rootweaver','petalfly','thornsprout','dewdrop','soilmite','vinerunner'].every(id => s.discoveredSpecies.includes(id)) },
+
+    // Economy - Ch2
+    { id: 'tr10kLoop', name: 'Five Figures', desc: 'Earn 10,000 TR in one loop', category: 'economy', check: s => s.trEarnedThisLoop >= 10000 },
+    { id: 'tr100kLoop', name: 'Six Figures', desc: 'Earn 100,000 TR in one loop', category: 'economy', check: s => s.trEarnedThisLoop >= 100000 },
+    { id: 'em500', name: 'Echo Hoarder', desc: 'Hold 500 Echo Matter', category: 'economy', check: s => s.echoMatter >= 500 },
+    { id: 'marketBuy10', name: 'Market Regular', desc: 'Buy 10 marketplace items total', category: 'economy', check: s => (s.totalMarketPurchases || 0) >= 10 },
+
+    // Loop - Ch2
+    { id: 'loop25ach', name: 'Loop Master', desc: 'Complete 25 loops', category: 'loop', check: s => s.totalLoops >= 25 },
+
+    // Tapping
+    { id: 'tap500', name: 'Fidget Champion', desc: 'Tap 500 anomalies', category: 'tapping', check: s => (s.totalAnomaliesTapped || 0) >= 500 },
+    { id: 'chain10', name: 'Chain Master', desc: 'Get a 10-chain', category: 'tapping', check: s => (s.anomalyChain || 0) >= 10 },
+
+    // Chapter
+    { id: 'ch1Complete', name: 'New Beginnings', desc: 'Complete Chapter 1', category: 'chapter', check: s => s.chapter >= 2 },
+    { id: 'ch2Complete', name: 'Green Thumb', desc: 'Complete Chapter 2', category: 'chapter', check: s => s.chapter >= 3 },
+
+    // Secret
+    { id: 'firstSynergy', name: 'Symbiosis', desc: 'Discover your first species synergy', category: 'secret', check: s => (s._hasSynergyBonus || false) },
+
     // Misc
     { id: 'allObj', name: 'Chapter Complete', desc: 'Complete all Ch1 objectives', category: 'chapter', check: s => Object.keys(s.chapterObjectives).length >= 5 },
   ];
@@ -92,6 +142,10 @@ export function addChronicleEntry(state, trigger) {
     firstPermanent: "Something stayed. When the fog came and took everything... something stayed with me.",
     allSpecies: "I've named them all. Every living thing in this soup. It feels like an ending, but it's not.",
     chapter1Complete: "The fog is different now. It's not just ending things. It's... showing me something else.",
+    chapter2Complete: "The garden is full. But I can feel something under the soil...",
+    firstCombination: "I put two things together and got... a third thing. Is this cooking? Science? Magic?",
+    firstSynergy: "They're helping each other. Without me telling them to. The ecosystem is cooperating.",
+    gardenReflection: "It's not a puddle anymore. It's a garden. I made a garden.",
   };
 
   const text = ENTRIES[trigger];

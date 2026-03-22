@@ -1,5 +1,6 @@
 import { GENERATORS, MILESTONES } from '../data/generators.js';
 import { MULTIPLIERS, AUTOMATION, PERMANENT_UPGRADES } from '../data/upgrades.js';
+import { getSymbiosisBonus, hasAnySynergy } from './symbiosis.js';
 
 export function getCost(baseCost, owned, scaling) {
   return Math.floor(baseCost * Math.pow(scaling, owned));
@@ -55,6 +56,13 @@ export function getTotalProduction(state) {
   }
 
   total *= (1 + globalBonus + harmonyBonus);
+
+  // Symbiosis bonus
+  const symbiosisGeneratorBonus = getSymbiosisBonus(state, 'generatorMult');
+  if (symbiosisGeneratorBonus > 0) total *= (1 + symbiosisGeneratorBonus);
+
+  // Track for achievement/objective
+  state._hasSynergyBonus = hasAnySynergy(state);
 
   for (const buff of (state.activeBuffs || [])) {
     if (buff.id === 'nurturePulse') total *= 2;
@@ -127,5 +135,6 @@ export function calcEchoMatter(state) {
 export function getTapValue(state) {
   const base = 1;
   const tapBonus = getMultiplierBonus(state, 'tapMultiplier');
-  return Math.floor(base * (1 + tapBonus)) || 1;
+  const symbTapBonus = getSymbiosisBonus(state, 'tapMult');
+  return Math.floor(base * (1 + tapBonus + symbTapBonus)) || 1;
 }

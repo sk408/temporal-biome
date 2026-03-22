@@ -19,7 +19,7 @@ export function createState() {
     objectivesCompletedThisLoop: 0, anomalyTokensEarnedThisLoop: 0,
     marketRotationSeed: 0, marketPurchasedThisLoop: [],
     lastSaveTime: Date.now(), totalPlayTime: 0, totalLoops: 0, totalTrEarned: 0,
-    totalAnomaliesTapped: 0, totalSpeciesDiscovered: 0,
+    totalAnomaliesTapped: 0, totalSpeciesDiscovered: 0, totalMarketPurchases: 0,
     activeAnomalies: [],
     dashboardMode: false,
   };

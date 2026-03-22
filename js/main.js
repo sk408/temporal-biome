@@ -4,7 +4,7 @@ import { getTotalProduction, getTapValue, calcEchoMatter, purchaseGenerator, pur
 import { tickCatastrophe, getCatastrophePhase, getCatastropheProgress } from './engine/catastrophe.js';
 import { runDiscoveryCheck, discoverSpecies, tryCombination, getDiscoveryInterval } from './engine/discovery.js';
 import { updateAnomalies, tapAnomaly, getActiveAnomalies } from './engine/anomalies.js';
-import { checkObjectives, checkAchievements, addChronicleEntry } from './engine/progress.js';
+import { checkObjectives, checkAchievements, addChronicleEntry, checkChapterComplete, advanceChapter } from './engine/progress.js';
 import { formatNum } from './engine/utils.js';
 import { GENERATORS } from './data/generators.js';
 import { SPECIES, generateSpeciesSVG } from './data/species.js';
@@ -14,8 +14,9 @@ import { initParticles, spawnBurst, spawnFloatingNumber, spawnAmbient, tickParti
 import { renderBiome, renderAnomalies } from './ui/biome.js';
 import { updateResourceBar, updateCatastropheBar, updateObjectives, updateQuoteBar, switchPanel } from './ui/renderer.js';
 import { renderGenerators, renderMultipliers, renderAutomation, renderPermanentUpgrades, renderMarketplace } from './ui/shop.js';
-import { showDiscovery, showCatastrophe, showLoopSummary } from './ui/overlays.js';
+import { showDiscovery, showCatastrophe, showLoopSummary, showChapterTransition, CHAPTER_INFO } from './ui/overlays.js';
 import { showToast } from './ui/notifications.js';
+import { getActiveSynergies } from './engine/symbiosis.js';
 
 let state;
 let lastTime = 0;
@@ -45,6 +46,10 @@ function init() {
       showToast(`Welcome back! +${formatNum(offline.trEarned)} TR while away`, 'story');
     }
   }
+
+  // Ensure generators are unlocked for current chapter
+  unlockChapterGenerators(state);
+  updateChapterHeader(state);
 
   initParticles(document.getElementById('particle-canvas'));
   renderBiome(state, document.getElementById('biome-svg'));
@@ -126,10 +131,35 @@ function gameLoop(timestamp) {
       for (const ach of newAchievements) {
         showToast(`Achievement: ${ach.name}`, 'achievement');
         if (ach.id === 'firstPerm') addChronicleEntry(state, 'firstPermanent');
+        if (ach.id === 'firstCombo') addChronicleEntry(state, 'firstCombination');
+        if (ach.id === 'firstSynergy') addChronicleEntry(state, 'firstSynergy');
       }
       if (newObjectives.length > 0 || newAchievements.length > 0) {
         renderStats();
         updateObjectives(state);
+      }
+
+      // Check chapter completion
+      if (checkChapterComplete(state) && !state._chapterAdvancePending) {
+        state._chapterAdvancePending = true;
+        showToast('All objectives complete! Chapter advancing...', 'achievement');
+        isOverlayActive = true;
+        const nextChapter = state.chapter + 1;
+        advanceChapter(state);
+        unlockChapterGenerators(state);
+        save(state);
+
+        showChapterTransition(nextChapter, () => {
+          isOverlayActive = false;
+          state._chapterAdvancePending = false;
+          updateChapterHeader(state);
+          renderBiome(state, document.getElementById('biome-svg'));
+          renderAllShops();
+          renderCodex();
+          renderChronicle();
+          renderStats();
+          updateAllUI();
+        });
       }
     }
 
@@ -391,6 +421,21 @@ function renderCodex() {
 
     grid.appendChild(card);
   }
+
+  // Render active synergies
+  const synList = document.getElementById('synergy-list');
+  if (synList) {
+    const active = getActiveSynergies(state);
+    if (active.length === 0) {
+      synList.innerHTML = '<div class="buy-detail" style="padding:6px;color:#6a7a8a;font-size:0.8rem;">Discover species pairs to unlock synergy bonuses...</div>';
+    } else {
+      synList.innerHTML = active.map(syn => {
+        const sA = SPECIES[syn.a];
+        const sB = SPECIES[syn.b];
+        return `<div class="synergy-row"><span style="color:${sA.color}">${sA.name}</span> + <span style="color:${sB.color}">${sB.name}</span><span class="synergy-bonus">${syn.desc}</span></div>`;
+      }).join('');
+    }
+  }
 }
 
 function selectForCombine(speciesId) {
@@ -532,12 +577,29 @@ function handleMarketPurchase(itemId, def) {
     showToast(`Chain set to ${def.actionValue}x!`, 'achievement');
   }
 
-  // Track rotating purchases
+  // Track purchases
   if (!state.marketPurchasedThisLoop) state.marketPurchasedThisLoop = [];
   state.marketPurchasedThisLoop.push(itemId);
+  state.totalMarketPurchases = (state.totalMarketPurchases || 0) + 1;
 
   renderAllShops();
   updateResourceBar(state);
+}
+
+function unlockChapterGenerators(state) {
+  const allGens = Object.keys(GENERATORS);
+  state.unlockedGenerators = allGens.filter(id => GENERATORS[id].chapter <= state.chapter);
+}
+
+function updateChapterHeader(state) {
+  const info = CHAPTER_INFO[state.chapter];
+  if (!info) return;
+  const numEl = document.getElementById('chapter-num');
+  const titleEl = document.getElementById('chapter-title');
+  const subtitleEl = document.getElementById('chapter-subtitle');
+  if (numEl) numEl.textContent = state.chapter;
+  if (titleEl) titleEl.textContent = info.name;
+  if (subtitleEl) subtitleEl.textContent = info.subtitle;
 }
 
 function renderAllShops() {
@@ -557,9 +619,15 @@ function updateAllUI() {
 function getRandomQuote(state) {
   const progress = getCatastropheProgress(state);
   let pool;
-  if (progress < 0.5) pool = QUOTES.early;
-  else if (progress < 0.8) pool = QUOTES.midLoop;
-  else pool = QUOTES.lateLoop;
+  if (state.chapter >= 2) {
+    if (progress < 0.5) pool = QUOTES.ch2Early || QUOTES.early;
+    else if (progress < 0.8) pool = QUOTES.ch2Mid || QUOTES.midLoop;
+    else pool = QUOTES.ch2Late || QUOTES.lateLoop;
+  } else {
+    if (progress < 0.5) pool = QUOTES.early;
+    else if (progress < 0.8) pool = QUOTES.midLoop;
+    else pool = QUOTES.lateLoop;
+  }
   return pool[Math.floor(Math.random() * pool.length)];
 }
 

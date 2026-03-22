@@ -24,6 +24,21 @@ export const GENERATORS = {
     baseCost: 5000, costScaling: 1.15, baseOutput: 120,
     flavor: "I built this? I BUILT this??",
   },
+  symbioticPair: {
+    id: 'symbioticPair', name: 'Symbiotic Pair', chapter: 2,
+    baseCost: 20000, costScaling: 1.15, baseOutput: 500,
+    flavor: "They need each other. I get that now.",
+  },
+  gardenMatrix: {
+    id: 'gardenMatrix', name: 'Garden Matrix', chapter: 2,
+    baseCost: 100000, costScaling: 1.15, baseOutput: 2000,
+    flavor: "I organized the chaos. It's... organized chaos.",
+  },
+  growthAccelerator: {
+    id: 'growthAccelerator', name: 'Growth Accelerator', chapter: 2,
+    baseCost: 500000, costScaling: 1.15, baseOutput: 8000,
+    flavor: "Time moves differently near this thing.",
+  },
 };
 
 export const MILESTONES = [

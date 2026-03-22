@@ -36,6 +36,31 @@ export const QUOTES = {
     "The fog took everything. But not what I learned.",
     "Loop {loop}. Let's see what sticks this time.",
   ],
+  // Chapter 2 quotes
+  ch2Early: [
+    "The ground is warm now. Things are different.",
+    "Roots everywhere. The soil is alive.",
+    "Something with petals just flew past me. Since when do flowers fly?",
+    "I've started gardening. In a time loop. This is fine.",
+    "The vine is watching me. I'm watching it back. We have a relationship now.",
+    "Soil under my fingernails. I'm becoming one of them.",
+    "Things are growing together. I didn't tell them to.",
+    "A tiny bug burrowed into my garden. It's working harder than I am.",
+  ],
+  ch2Mid: [
+    "The garden is evolving faster than I can keep up.",
+    "Two species just... merged. I didn't know they could do that.",
+    "The roots are connecting everything underground. Like an internet. Root-ernet?",
+    "I combined a moss and a root. Got something that glows. I'm basically a scientist.",
+    "The ecosystem doesn't need me anymore. But I think it wants me here.",
+    "The thorns protect the soft things. Even nature knows about defense.",
+  ],
+  ch2Late: [
+    "The fog is coming for my garden. I won't let it take this one.",
+    "Everything I planted is holding on. Together.",
+    "The roots go deeper than I thought. Deeper than the fog reaches.",
+    "This garden survives what I can't. Maybe that's the point.",
+  ],
 };
 
 export const CHRONICLE_TRIGGERS = {
