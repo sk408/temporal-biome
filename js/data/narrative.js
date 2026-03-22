@@ -1,0 +1,50 @@
+export const QUOTES = {
+  early: [
+    "The ground is wet. It's always wet.",
+    "I think I've been here before. Or somewhere like here.",
+    "Something glows in the distance. I'm not sure I want to know what.",
+    "Why does the fog feel like it's watching?",
+    "I named a moss today. This is my life now.",
+    "The puddles here are deeper than they look.",
+    "Everything grows so fast. Too fast.",
+    "I keep losing track of time. Does time work here?",
+    "The air tastes like old batteries and fresh rain.",
+    "Something moved. I'm choosing to ignore it.",
+  ],
+  midLoop: [
+    "The ecosystem is growing. I think I'm part of it now.",
+    "The spores seem to follow me. That's fine. Everything is fine.",
+    "I built something today. From nothing. Well, from moss.",
+    "The roots are humming again. It's almost musical.",
+    "I'm getting better at this. Whatever 'this' is.",
+    "The fog is closer today. I try not to think about it.",
+    "I wonder if the creatures notice when the fog takes them too.",
+    "Time moves differently near the puddles. Slower, maybe.",
+  ],
+  lateLoop: [
+    "The fog is coming. I can feel it in my teeth.",
+    "Everything I built... it won't survive the fog. But I will.",
+    "I've learned something. I just don't know what yet.",
+    "The moss is glowing brighter. It knows too.",
+    "This isn't the end. It's never the end here.",
+    "I should be afraid of the fog. I'm not anymore.",
+  ],
+  postReset: [
+    "Back again. Same puddle. But I know things now.",
+    "The moss doesn't remember me. But I remember it.",
+    "Each time, I'm faster. Each time, I understand a little more.",
+    "The fog took everything. But not what I learned.",
+    "Loop {loop}. Let's see what sticks this time.",
+  ],
+};
+
+export const CHRONICLE_TRIGGERS = {
+  start: { loopReq: 0, desc: 'Game start' },
+  firstDiscovery: { event: 'discovery', count: 1 },
+  firstLoop: { event: 'loop', count: 1 },
+  loop5: { event: 'loop', count: 5 },
+  loop10: { event: 'loop', count: 10 },
+  firstPermanent: { event: 'permanentUpgrade', count: 1 },
+  allSpecies: { event: 'discovery', count: 5 },
+  chapter1Complete: { event: 'objectivesComplete', count: 5 },
+};
