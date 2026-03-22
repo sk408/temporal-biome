@@ -1,0 +1,2201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+<title>The Chronicle — An Idle Loop</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes glowPulse { 0%, 100% { text-shadow: 0 0 8px currentColor, 0 0 16px currentColor; } 50% { text-shadow: 0 0 16px currentColor, 0 0 32px currentColor, 0 0 48px currentColor; } }
+@keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+@keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+@keyframes catastropheShake {
+  0%, 100% { transform: translate(0); }
+  10% { transform: translate(-3px, 2px); }
+  20% { transform: translate(3px, -2px); }
+  30% { transform: translate(-2px, 3px); }
+  40% { transform: translate(2px, -3px); }
+  50% { transform: translate(-3px, 1px); }
+  60% { transform: translate(3px, 1px); }
+  70% { transform: translate(-1px, -3px); }
+  80% { transform: translate(1px, 3px); }
+  90% { transform: translate(-2px, -1px); }
+}
+@keyframes ripple {
+  0% { transform: scale(0); opacity: 0.6; }
+  100% { transform: scale(4); opacity: 0; }
+}
+@keyframes progressFill {
+  from { width: 0; }
+}
+@keyframes chapterReveal {
+  0% { opacity: 0; letter-spacing: 12px; }
+  50% { opacity: 1; letter-spacing: 6px; }
+  100% { opacity: 1; letter-spacing: 2px; }
+}
+@keyframes subtitleReveal {
+  0% { opacity: 0; }
+  100% { opacity: 0.7; }
+}
+
+body {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background: #0a0e1a;
+  color: #c8d0e0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#game-container {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Chapter Header */
+#chapter-header {
+  text-align: center;
+  padding: 16px 16px 8px;
+  position: relative;
+  z-index: 10;
+}
+#chapter-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  color: #5a7a9a;
+  margin-bottom: 4px;
+}
+#chapter-title {
+  font-size: 22px;
+  color: #7af8d4;
+  text-shadow: 0 0 12px rgba(122, 248, 212, 0.5), 0 0 24px rgba(122, 248, 212, 0.2);
+  margin-bottom: 4px;
+  transition: all 1s ease;
+}
+#chapter-subtitle {
+  font-size: 12px;
+  font-style: italic;
+  color: #5a7a9a;
+  opacity: 0.7;
+}
+
+/* Resource Bar */
+#resource-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(15, 20, 35, 0.8);
+  border-bottom: 1px solid rgba(122, 248, 212, 0.1);
+}
+.resource-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.resource-icon {
+  width: 18px;
+  height: 18px;
+}
+#residue-count {
+  color: #7af8d4;
+  font-weight: bold;
+  text-shadow: 0 0 6px rgba(122, 248, 212, 0.4);
+  font-size: 15px;
+}
+#loop-count {
+  color: #b088f0;
+  text-shadow: 0 0 6px rgba(176, 136, 240, 0.3);
+}
+#species-count {
+  color: #f0c860;
+  text-shadow: 0 0 6px rgba(240, 200, 96, 0.3);
+}
+
+/* Biome View */
+#biome-container {
+  position: relative;
+  flex: 1;
+  min-height: 320px;
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+#biome-svg {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+#particle-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+#tap-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: rgba(122, 248, 212, 0.4);
+  animation: pulse 2s ease-in-out infinite;
+  z-index: 6;
+  pointer-events: none;
+}
+.tap-ripple {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid rgba(122, 248, 212, 0.5);
+  animation: ripple 0.8s ease-out forwards;
+  pointer-events: none;
+  z-index: 6;
+}
+.residue-popup {
+  position: absolute;
+  color: #7af8d4;
+  font-size: 16px;
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(122, 248, 212, 0.6);
+  pointer-events: none;
+  z-index: 7;
+  animation: fadeOut 1s ease-out forwards;
+  transform: translateY(-20px);
+}
+
+/* Catastrophe Timer */
+#catastrophe-bar {
+  height: 3px;
+  background: rgba(255, 80, 80, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+#catastrophe-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff5050, #ff8844, #ff5050);
+  width: 0%;
+  transition: width 0.5s linear;
+}
+#catastrophe-label {
+  position: absolute;
+  right: 8px;
+  top: -14px;
+  font-size: 9px;
+  color: #ff5050;
+  opacity: 0;
+  transition: opacity 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* Chapter Progress */
+#progress-section {
+  padding: 12px 16px;
+  background: rgba(15, 20, 35, 0.9);
+  border-top: 1px solid rgba(122, 248, 212, 0.08);
+}
+#progress-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: #5a7a9a;
+  margin-bottom: 8px;
+}
+.objective {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 13px;
+  transition: all 0.3s;
+}
+.objective.completed {
+  color: #7af8d4;
+  text-shadow: 0 0 6px rgba(122, 248, 212, 0.3);
+}
+.objective.completed .obj-check {
+  color: #7af8d4;
+}
+.obj-check {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid #3a4a6a;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: transparent;
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
+.objective.completed .obj-check {
+  border-color: #7af8d4;
+  background: rgba(122, 248, 212, 0.15);
+}
+.obj-progress {
+  font-size: 11px;
+  color: #5a7a9a;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Bottom Nav */
+#bottom-nav {
+  display: flex;
+  background: rgba(10, 14, 26, 0.95);
+  border-top: 1px solid rgba(122, 248, 212, 0.1);
+  padding: 6px 0 max(6px, env(safe-area-inset-bottom));
+}
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px;
+  background: none;
+  border: none;
+  color: #5a7a9a;
+  font-family: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.nav-btn.active, .nav-btn:active {
+  color: #7af8d4;
+}
+.nav-btn svg {
+  width: 22px;
+  height: 22px;
+}
+.nav-btn .badge {
+  position: absolute;
+  top: 4px;
+  right: calc(50% - 16px);
+  width: 8px;
+  height: 8px;
+  background: #ff5050;
+  border-radius: 50%;
+  display: none;
+}
+
+/* Panels (overlay) */
+.panel-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(5, 8, 15, 0.92);
+  z-index: 100;
+  display: none;
+  flex-direction: column;
+  animation: fadeIn 0.3s ease;
+}
+.panel-overlay.visible {
+  display: flex;
+}
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid rgba(122, 248, 212, 0.1);
+}
+.panel-title {
+  font-size: 18px;
+  color: #7af8d4;
+  text-shadow: 0 0 8px rgba(122, 248, 212, 0.3);
+}
+.panel-close {
+  background: none;
+  border: 1px solid rgba(122, 248, 212, 0.2);
+  color: #7af8d4;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Chronicle Panel */
+.chronicle-entry {
+  padding: 12px;
+  margin-bottom: 12px;
+  background: rgba(20, 28, 50, 0.6);
+  border-left: 2px solid rgba(122, 248, 212, 0.3);
+  border-radius: 0 6px 6px 0;
+  animation: slideUp 0.4s ease;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.chronicle-entry .entry-chapter {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #b088f0;
+  margin-bottom: 4px;
+}
+.chronicle-entry .entry-text {
+  color: #c8d0e0;
+  font-style: italic;
+}
+.chronicle-entry.protagonist {
+  border-left-color: rgba(240, 200, 96, 0.4);
+}
+.chronicle-entry.protagonist .entry-text {
+  color: #f0c860;
+}
+.chronicle-empty {
+  text-align: center;
+  color: #3a4a6a;
+  padding: 40px 20px;
+  font-style: italic;
+}
+
+/* Species Panel */
+.species-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: rgba(20, 28, 50, 0.6);
+  border-radius: 8px;
+  border: 1px solid rgba(122, 248, 212, 0.08);
+  animation: slideUp 0.3s ease;
+}
+.species-card svg {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+.species-info h3 {
+  font-size: 14px;
+  color: #7af8d4;
+  margin-bottom: 2px;
+}
+.species-info p {
+  font-size: 12px;
+  color: #5a7a9a;
+  line-height: 1.4;
+}
+.species-info .species-type {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #b088f0;
+}
+
+/* Marketplace Panel */
+.market-category {
+  margin-bottom: 16px;
+}
+.market-category h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #5a7a9a;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(122, 248, 212, 0.06);
+}
+.market-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  background: rgba(20, 28, 50, 0.5);
+  border-radius: 6px;
+  border: 1px solid rgba(122, 248, 212, 0.06);
+}
+.market-item-info h4 {
+  font-size: 13px;
+  color: #c8d0e0;
+  margin-bottom: 2px;
+}
+.market-item-info p {
+  font-size: 11px;
+  color: #5a7a9a;
+}
+.market-buy {
+  background: rgba(122, 248, 212, 0.1);
+  border: 1px solid rgba(122, 248, 212, 0.3);
+  color: #7af8d4;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.market-buy:active {
+  background: rgba(122, 248, 212, 0.25);
+  transform: scale(0.95);
+}
+.market-buy:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+.market-buy.purchased {
+  background: rgba(122, 248, 212, 0.05);
+  border-color: rgba(122, 248, 212, 0.15);
+  color: #3a6a5a;
+}
+
+/* Notification Toast */
+#toast-container {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  width: 90%;
+  max-width: 400px;
+  pointer-events: none;
+}
+.toast {
+  background: rgba(15, 22, 40, 0.95);
+  border: 1px solid rgba(122, 248, 212, 0.2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #c8d0e0;
+  animation: slideUp 0.3s ease, fadeOut 0.5s ease 2.5s forwards;
+  text-align: center;
+  pointer-events: auto;
+}
+.toast.discovery {
+  border-color: rgba(240, 200, 96, 0.4);
+  color: #f0c860;
+  text-shadow: 0 0 6px rgba(240, 200, 96, 0.3);
+}
+.toast.story {
+  border-color: rgba(176, 136, 240, 0.3);
+  color: #d0b8ff;
+  font-style: italic;
+}
+.toast.catastrophe {
+  border-color: rgba(255, 80, 80, 0.4);
+  color: #ff8888;
+}
+
+/* Transition Overlay */
+#transition-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #0a0e1a;
+  z-index: 300;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+}
+#transition-overlay.visible {
+  display: flex;
+}
+#transition-text {
+  font-size: 18px;
+  color: #c8d0e0;
+  line-height: 1.8;
+  max-width: 320px;
+  opacity: 0;
+}
+#transition-chapter-title {
+  font-size: 28px;
+  color: #7af8d4;
+  text-shadow: 0 0 16px rgba(122, 248, 212, 0.5), 0 0 32px rgba(122, 248, 212, 0.2);
+  margin-top: 24px;
+  opacity: 0;
+}
+#transition-subtitle {
+  font-size: 14px;
+  font-style: italic;
+  color: #5a7a9a;
+  margin-top: 8px;
+  opacity: 0;
+}
+
+/* Loop transition */
+#loop-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 250;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+}
+#loop-overlay.visible {
+  display: flex;
+}
+#loop-text {
+  font-size: 16px;
+  color: #c8d0e0;
+  font-style: italic;
+  line-height: 1.8;
+  max-width: 300px;
+}
+
+/* Discovery animation */
+#discovery-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(5, 8, 15, 0.85);
+  z-index: 280;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+}
+#discovery-overlay.visible {
+  display: flex;
+}
+#discovery-svg {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 20px;
+  animation: breathe 2s ease-in-out infinite;
+}
+#discovery-name {
+  font-size: 22px;
+  color: #f0c860;
+  text-shadow: 0 0 12px rgba(240, 200, 96, 0.5);
+  margin-bottom: 6px;
+}
+#discovery-type {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: #b088f0;
+  margin-bottom: 12px;
+}
+#discovery-desc {
+  font-size: 14px;
+  color: #c8d0e0;
+  font-style: italic;
+  max-width: 280px;
+  line-height: 1.6;
+}
+#discovery-quote {
+  font-size: 13px;
+  color: #f0c860;
+  margin-top: 16px;
+  max-width: 280px;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+#discovery-dismiss {
+  margin-top: 24px;
+  font-size: 11px;
+  color: #5a7a9a;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Combination hints */
+.combine-hint {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(176, 136, 240, 0.08);
+  border: 1px solid rgba(176, 136, 240, 0.15);
+  border-radius: 6px;
+  font-size: 12px;
+  color: #b088f0;
+  text-align: center;
+}
+
+/* Fog overlay */
+#fog-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 2s ease;
+}
+
+/* Shake effect */
+.shaking {
+  animation: catastropheShake 0.5s ease-in-out;
+}
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <!-- Chapter Header -->
+  <div id="chapter-header">
+    <div id="chapter-label">Chapter <span id="chapter-num">1</span></div>
+    <div id="chapter-title">Primordial Soup</div>
+    <div id="chapter-subtitle">"Everything begins in the dark."</div>
+  </div>
+
+  <!-- Resource Bar -->
+  <div id="resource-bar">
+    <div class="resource-item">
+      <svg class="resource-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="#7af8d4" stroke-width="1.5" opacity="0.6"/><circle cx="12" cy="12" r="4" fill="#7af8d4" opacity="0.5"/><circle cx="12" cy="12" r="2" fill="#7af8d4"/></svg>
+      <span id="residue-count">0</span>
+    </div>
+    <div class="resource-item">
+      <svg class="resource-icon" viewBox="0 0 24 24"><path d="M12 3 C6 3 3 8 3 12 C3 18 8 21 12 21 C16 21 21 18 21 12 C21 8 18 3 12 3" fill="none" stroke="#b088f0" stroke-width="1.5" opacity="0.6"/><path d="M12 7v5l3 3" fill="none" stroke="#b088f0" stroke-width="1.5"/></svg>
+      Loop <span id="loop-count">0</span>
+    </div>
+    <div class="resource-item">
+      <svg class="resource-icon" viewBox="0 0 24 24"><path d="M12 4 C8 4 5 8 7 12 C9 16 12 20 12 20 C12 20 15 16 17 12 C19 8 16 4 12 4" fill="none" stroke="#f0c860" stroke-width="1.5" opacity="0.6"/><circle cx="12" cy="11" r="2" fill="#f0c860" opacity="0.5"/></svg>
+      <span id="species-count">0</span>/<span id="species-total">3</span>
+    </div>
+  </div>
+
+  <!-- Biome View -->
+  <div id="biome-container">
+    <svg id="biome-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+    <canvas id="particle-canvas"></canvas>
+    <svg id="fog-overlay" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="fog-blur"><feGaussianBlur stdDeviation="20"/></filter>
+      </defs>
+    </svg>
+    <div id="tap-hint">tap to collect temporal residue</div>
+  </div>
+
+  <!-- Catastrophe Bar -->
+  <div id="catastrophe-bar">
+    <div id="catastrophe-fill"></div>
+    <div id="catastrophe-label">catastrophe approaching</div>
+  </div>
+
+  <!-- Chapter Progress / Objectives -->
+  <div id="progress-section">
+    <div id="progress-title">Chapter Objectives</div>
+    <div id="objectives-list"></div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div id="bottom-nav">
+    <button class="nav-btn active" data-panel="biome" onclick="switchPanel('biome')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="14" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 8V4M8 10L5 7M16 10L19 7" stroke="currentColor" stroke-width="1.5"/></svg>
+      Biome
+    </button>
+    <button class="nav-btn" data-panel="chronicle" onclick="switchPanel('chronicle')">
+      <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 7h6M9 11h6M9 15h4" stroke="currentColor" stroke-width="1.2"/></svg>
+      Chronicle
+      <span class="badge" id="chronicle-badge"></span>
+    </button>
+    <button class="nav-btn" data-panel="species-panel" onclick="switchPanel('species-panel')">
+      <svg viewBox="0 0 24 24"><path d="M12 4 C8 4 5 8 7 12 C9 16 12 20 12 20 C12 20 15 16 17 12 C19 8 16 4 12 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      Species
+    </button>
+    <button class="nav-btn" data-panel="market" onclick="switchPanel('market')">
+      <svg viewBox="0 0 24 24"><path d="M4 8L8 4h8l4 4v8l-4 4H8l-4-4z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
+      Market
+    </button>
+  </div>
+</div>
+
+<!-- Chronicle Panel -->
+<div class="panel-overlay" id="chronicle">
+  <div class="panel-header">
+    <span class="panel-title">The Chronicle</span>
+    <button class="panel-close" onclick="closePanel()">&times;</button>
+  </div>
+  <div class="panel-body" id="chronicle-entries">
+    <div class="chronicle-empty">No entries yet. The pages are blank... for now.</div>
+  </div>
+</div>
+
+<!-- Species Panel -->
+<div class="panel-overlay" id="species-panel">
+  <div class="panel-header">
+    <span class="panel-title">Discovered Species</span>
+    <button class="panel-close" onclick="closePanel()">&times;</button>
+  </div>
+  <div class="panel-body" id="species-list">
+    <div class="chronicle-empty">No species discovered yet. Tap the biome to begin exploring.</div>
+  </div>
+</div>
+
+<!-- Marketplace Panel -->
+<div class="panel-overlay" id="market">
+  <div class="panel-header">
+    <span class="panel-title">Marketplace</span>
+    <button class="panel-close" onclick="closePanel()">&times;</button>
+  </div>
+  <div class="panel-body" id="market-content"></div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- Transition Overlay (chapter change) -->
+<div id="transition-overlay">
+  <div id="transition-text"></div>
+  <div id="transition-chapter-title"></div>
+  <div id="transition-subtitle"></div>
+</div>
+
+<!-- Loop Overlay (catastrophe) -->
+<div id="loop-overlay">
+  <div id="loop-text"></div>
+</div>
+
+<!-- Discovery Overlay -->
+<div id="discovery-overlay" onclick="dismissDiscovery()">
+  <svg id="discovery-svg" viewBox="0 0 120 120"></svg>
+  <div id="discovery-name"></div>
+  <div id="discovery-type"></div>
+  <div id="discovery-desc"></div>
+  <div id="discovery-quote"></div>
+  <div id="discovery-dismiss">tap to continue</div>
+</div>
+
+<script>
+// ============================================================
+//  GAME STATE
+// ============================================================
+const DEFAULT_STATE = {
+  residue: 0,
+  totalResidue: 0,
+  loops: 0,
+  chapter: 1,
+  discoveredSpecies: [],
+  chronicleEntries: [],
+  purchasedUpgrades: [],
+  tapMultiplier: 1,
+  autoCollectRate: 0,
+  discoveryChance: 0.12,
+  catastropheTimer: 0,
+  catastropheDuration: 65,
+  objectivesCompleted: {},
+  chapterComplete: false,
+  ch2LoopsRequired: 3,
+  loopsThisChapter: 0,
+  combinationsFound: [],
+  hasSeenIntro: false,
+  lastSaveTime: Date.now()
+};
+
+let G = {};
+let biomeCreatures = [];
+let particles = [];
+let discoveryQueue = [];
+let isShowingDiscovery = false;
+let catastropheActive = false;
+let gameTimer = 0;
+let autoCollectTimer = 0;
+let discoveryCheckTimer = 0;
+let animFrame;
+let lastTime = 0;
+
+// ============================================================
+//  DATA: SPECIES
+// ============================================================
+const CHAPTER_1_SPECIES = [
+  {
+    id: 'luminmoss',
+    name: 'Luminmoss',
+    type: 'Flora',
+    desc: 'A faintly glowing moss that clings to nothing in particular. It seems to pulse when observed.',
+    quote: '"Found moss that glows when I touch it. Called it \'Luminmoss.\' Felt like naming things might help me stay sane."',
+    color: '#4af090',
+    generate: (x, y) => {
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('transform',`translate(${x},${y})`);
+      for(let i = 0; i < 7; i++){
+        const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+        const ox = (Math.random()-0.5)*20, oy = (Math.random()-0.5)*12;
+        c.setAttribute('cx', ox); c.setAttribute('cy', oy);
+        c.setAttribute('r', 2+Math.random()*4);
+        c.setAttribute('fill', `rgba(74,240,144,${0.3+Math.random()*0.4})`);
+        c.style.animation = `breathe ${2+Math.random()*2}s ease-in-out ${Math.random()*2}s infinite`;
+        g.appendChild(c);
+      }
+      return g;
+    }
+  },
+  {
+    id: 'driftspore',
+    name: 'Driftspore',
+    type: 'Microorganism',
+    desc: 'Tiny floating spores that drift upward. They seem attracted to warmth.',
+    quote: '"Tiny things floating upward. I tried to catch one. It dissolved in my hand like a thought I couldn\'t hold."',
+    color: '#b088f0',
+    generate: (x, y) => {
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('transform',`translate(${x},${y})`);
+      for(let i = 0; i < 5; i++){
+        const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+        c.setAttribute('cx', (Math.random()-0.5)*16);
+        c.setAttribute('cy', (Math.random()-0.5)*30);
+        c.setAttribute('r', 1+Math.random()*2);
+        c.setAttribute('fill', `rgba(176,136,240,${0.4+Math.random()*0.4})`);
+        c.style.animation = `float ${2+Math.random()*3}s ease-in-out ${Math.random()*2}s infinite`;
+        g.appendChild(c);
+      }
+      return g;
+    }
+  },
+  {
+    id: 'poolworm',
+    name: 'Poolworm',
+    type: 'Fauna',
+    desc: 'A translucent worm-like creature that swims in shallow water. Completely harmless. Probably.',
+    quote: '"Something moved in the puddle. It\'s... a worm? It looked at me. Do worms look? This one did."',
+    color: '#60c8f0',
+    generate: (x, y) => {
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('transform',`translate(${x},${y})`);
+      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      const wobble = Math.random()*5;
+      path.setAttribute('d', `M-12,0 Q-6,${-4-wobble} 0,0 Q6,${4+wobble} 12,0`);
+      path.setAttribute('stroke', 'rgba(96,200,240,0.6)');
+      path.setAttribute('stroke-width', '3');
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke-linecap', 'round');
+      path.style.animation = `breathe ${1.5+Math.random()}s ease-in-out infinite`;
+      g.appendChild(path);
+      const eye = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      eye.setAttribute('cx', '11'); eye.setAttribute('cy', '0'); eye.setAttribute('r', '1.5');
+      eye.setAttribute('fill', '#60c8f0');
+      g.appendChild(eye);
+      return g;
+    }
+  }
+];
+
+const CHAPTER_2_SPECIES = [
+  {
+    id: 'rootvein',
+    name: 'Rootvein',
+    type: 'Flora',
+    desc: 'A network of glowing roots that spreads beneath the soil surface, pulsing with energy.',
+    quote: '"The ground has veins now. Glowing ones. I pressed my ear to the dirt and swore I heard a heartbeat."',
+    color: '#f0a040',
+    generate: (x, y) => {
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('transform',`translate(${x},${y})`);
+      for(let i = 0; i < 4; i++){
+        const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+        const angle = (i/4)*Math.PI*2;
+        const len = 10+Math.random()*15;
+        const cx1 = Math.cos(angle+0.3)*len*0.4, cy1 = Math.sin(angle+0.3)*len*0.4;
+        const ex = Math.cos(angle)*len, ey = Math.sin(angle)*len;
+        path.setAttribute('d', `M0,0 Q${cx1},${cy1} ${ex},${ey}`);
+        path.setAttribute('stroke', `rgba(240,160,64,${0.3+Math.random()*0.4})`);
+        path.setAttribute('stroke-width', `${1+Math.random()*2}`);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke-linecap', 'round');
+        path.style.animation = `pulse ${2+Math.random()*2}s ease-in-out ${Math.random()*2}s infinite`;
+        g.appendChild(path);
+      }
+      return g;
+    }
+  },
+  {
+    id: 'thornpetal',
+    name: 'Thornpetal',
+    type: 'Flora',
+    desc: 'A flower with petals that are actually hardened thorns. Beautiful from a distance.',
+    quote: '"Pretty flower. Reached for it. OW. Added \'thornpetal\' to the notebook. And \'get bandages\' to my to-do list."',
+    color: '#f06080',
+    generate: (x, y) => {
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('transform',`translate(${x},${y})`);
+      for(let i = 0; i < 5; i++){
+        const angle = (i/5)*Math.PI*2 - Math.PI/2;
+        const petal = document.createElementNS('http://www.w3.org/2000/svg','path');
+        const px = Math.cos(angle)*12, py = Math.sin(angle)*12;
+        petal.setAttribute('d', `M0,0 Q${Math.cos(angle+0.4)*8},${Math.sin(angle+0.4)*8} ${px},${py} Q${Math.cos(angle-0.4)*8},${Math.sin(angle-0.4)*8} 0,0`);
+        petal.setAttribute('fill', `rgba(240,96,128,${0.3+Math.random()*0.3})`);
+        petal.setAttribute('stroke', 'rgba(240,96,128,0.5)');
+        petal.setAttribute('stroke-width', '0.5');
+        g.appendChild(petal);
+      }
+      const center = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      center.setAttribute('cx','0'); center.setAttribute('cy','0'); center.setAttribute('r','3');
+      center.setAttribute('fill','rgba(240,200,96,0.6)');
+      g.appendChild(center);
+      g.style.animation = `breathe ${3+Math.random()*2}s ease-in-out infinite`;
+      return g;
+    }
+  },
+  {
+    id: 'shellcrawler',
+    name: 'Shellcrawler',
+    type: 'Fauna',
+    desc: 'A small armored creature that moves impossibly slowly. Its shell reflects light in strange patterns.',
+    quote: '"Watched this thing crawl for 10 minutes. It moved maybe an inch. I respect the commitment."',
+    color: '#88c8a0',
+    generate: (x, y) => {
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('transform',`translate(${x},${y})`);
+      const shell = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+      shell.setAttribute('cx','0'); shell.setAttribute('cy','-2');
+      shell.setAttribute('rx','8'); shell.setAttribute('ry','6');
+      shell.setAttribute('fill','rgba(136,200,160,0.4)');
+      shell.setAttribute('stroke','rgba(136,200,160,0.6)');
+      shell.setAttribute('stroke-width','1');
+      g.appendChild(shell);
+      for(let i=0;i<3;i++){
+        const line = document.createElementNS('http://www.w3.org/2000/svg','path');
+        const yy = -4+i*2;
+        line.setAttribute('d',`M${-6+i},${yy} Q0,${yy-2} ${6-i},${yy}`);
+        line.setAttribute('stroke','rgba(136,200,160,0.3)');
+        line.setAttribute('stroke-width','0.5');
+        line.setAttribute('fill','none');
+        g.appendChild(line);
+      }
+      // legs
+      for(let side of [-1,1]){
+        for(let i=0;i<2;i++){
+          const leg = document.createElementNS('http://www.w3.org/2000/svg','line');
+          leg.setAttribute('x1', side*5); leg.setAttribute('y1', 2+i*3);
+          leg.setAttribute('x2', side*9); leg.setAttribute('y2', 5+i*2);
+          leg.setAttribute('stroke','rgba(136,200,160,0.5)');
+          leg.setAttribute('stroke-width','1');
+          g.appendChild(leg);
+        }
+      }
+      return g;
+    }
+  }
+];
+
+const COMBINATIONS = [
+  {
+    id: 'sporeworm',
+    ingredients: ['driftspore','poolworm'],
+    name: 'Sporeworm',
+    type: 'Hybrid',
+    desc: 'A worm covered in tiny luminous spores. It leaves a glowing trail wherever it goes.',
+    quote: '"Two things got close and became a new thing. Is that... evolution? Or something else entirely?"',
+    color: '#90a0f0',
+    generate: (x, y) => {
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      g.setAttribute('transform',`translate(${x},${y})`);
+      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d', 'M-14,0 Q-7,-6 0,0 Q7,6 14,0');
+      path.setAttribute('stroke', 'rgba(144,160,240,0.7)');
+      path.setAttribute('stroke-width', '3');
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke-linecap', 'round');
+      path.style.animation = `breathe ${1.5}s ease-in-out infinite`;
+      g.appendChild(path);
+      for(let i=0;i<4;i++){
+        const s = document.createElementNS('http://www.w3.org/2000/svg','circle');
+        s.setAttribute('cx', -10+i*7); s.setAttribute('cy', (i%2===0?-2:2));
+        s.setAttribute('r', '1.5');
+        s.setAttribute('fill', `rgba(176,136,240,${0.5+Math.random()*0.3})`);
+        s.style.animation = `float ${1+Math.random()}s ease-in-out ${Math.random()}s infinite`;
+        g.appendChild(s);
+      }
+      return g;
+    }
+  }
+];
+
+// ============================================================
+//  DATA: MARKETPLACE
+// ============================================================
+const MARKET_ITEMS = {
+  1: [
+    { id: 'keen_eyes', name: 'Keen Eyes', desc: '+50% discovery chance', cost: 15, effect: () => { G.discoveryChance *= 1.5; } },
+    { id: 'residue_magnet', name: 'Residue Magnet', desc: '+1 residue per tap', cost: 25, effect: () => { G.tapMultiplier += 1; } },
+    { id: 'temporal_echo', name: 'Temporal Echo', desc: 'Auto-collect 1/sec', cost: 50, effect: () => { G.autoCollectRate += 1; } },
+    { id: 'thick_notebook', name: 'Thick Notebook', desc: 'Unlock more chronicle entries', cost: 40, effect: () => {} },
+    { id: 'residue_surge', name: 'Residue Surge', desc: '+3 per tap', cost: 80, effect: () => { G.tapMultiplier += 3; } },
+    { id: 'auto_collector_2', name: 'Auto-Collector II', desc: 'Auto-collect +2/sec', cost: 120, effect: () => { G.autoCollectRate += 2; } },
+  ],
+  2: [
+    { id: 'combination_sense', name: 'Combination Sense', desc: 'Hints at species combinations', cost: 60, effect: () => {} },
+    { id: 'deep_roots', name: 'Deep Roots', desc: 'Species persist through loops', cost: 150, effect: () => {} },
+    { id: 'residue_flood', name: 'Residue Flood', desc: '+5 per tap', cost: 100, effect: () => { G.tapMultiplier += 5; } },
+    { id: 'auto_collector_3', name: 'Auto-Collector III', desc: 'Auto-collect +5/sec', cost: 200, effect: () => { G.autoCollectRate += 5; } },
+    { id: 'loop_memory', name: 'Loop Memory', desc: 'Start loops with 10 residue', cost: 180, effect: () => {} },
+    { id: 'fog_resistance', name: 'Fog Resistance', desc: 'Catastrophe timer +15s', cost: 250, effect: () => { G.catastropheDuration += 15; } },
+  ]
+};
+
+// ============================================================
+//  DATA: CHRONICLE ENTRIES & STORY
+// ============================================================
+const STORY_FRAGMENTS = {
+  1: [
+    { trigger: 'start', text: "Day 1 (again): Woke up on wet ground. Everything smells like copper and ozone.", type: 'journal' },
+    { trigger: 'loop_1', text: "The loop resets everything except my memories. And this notebook, somehow.", type: 'journal' },
+    { trigger: 'species_1', text: "Found moss that glows when I touch it. Called it 'Luminmoss.' Felt like naming things might help me stay sane.", type: 'journal' },
+    { trigger: 'species_2', text: "The fog rolled in exactly 47 minutes after I woke up. Counting helps.", type: 'journal' },
+    { trigger: 'loop_2', text: "Second reset. The moss is gone but I remember where it was. It grew back faster this time.", type: 'journal' },
+    { trigger: 'catastrophe_1', text: "The sky turned red. Everything dissolved. Then I woke up again.", type: 'journal' },
+    { trigger: 'chapter_end', text: "Something is changing. Not just the world around me. Me. I'm changing.", type: 'journal' },
+  ],
+  2: [
+    { trigger: 'start', text: "Second chapter of... whatever this is. The ground is different now. Soil, not mud.", type: 'journal' },
+    { trigger: 'species_1', text: "Two species near each other did something unexpected. They merged? Combined? I need to test this.", type: 'journal' },
+    { trigger: 'loop_1', text: "I'm not just surviving loops now. I'm starting to LEARN from them.", type: 'journal' },
+    { trigger: 'species_2', text: "The notebook says 'Chapter 2' now. I didn't write that.", type: 'journal' },
+  ]
+};
+
+const PROTAGONIST_QUOTES = {
+  tap: [
+    "Still collecting glowing dust. This is my life now.",
+    "Each particle remembers something I don't.",
+    "It tingles. Probably fine.",
+    "The residue hums when I hold enough of it.",
+    "I wonder if the residue is collecting ME."
+  ],
+  discovery: [
+    "New friend! Or food. Hard to tell here.",
+    "I'm basically a biologist now. An accidental, confused biologist.",
+    "Named it before it could name me.",
+    "Added to the notebook. Pages getting full."
+  ],
+  catastrophe: [
+    "Here we go again...",
+    "The sky is doing that thing. I hate that thing.",
+    "At least I know what comes next. That's... something, right?",
+    "Fog's early today. Rude."
+  ],
+  loop: [
+    "The fog clears. You remember something new...",
+    "Reset. But not quite the same as before.",
+    "Everything old is new again. Literally.",
+    "Dawn. Or whatever passes for dawn here.",
+    "Same place. Same mud. Different me."
+  ]
+};
+
+// ============================================================
+//  CHAPTER CONFIG
+// ============================================================
+const CHAPTERS = {
+  1: {
+    title: 'Primordial Soup',
+    subtitle: '"Everything begins in the dark."',
+    species: CHAPTER_1_SPECIES,
+    objectives: [
+      { id: 'discover_3', label: 'Discover 3 species', check: () => G.discoveredSpecies.filter(s => CHAPTER_1_SPECIES.find(cs => cs.id===s)).length >= 3, progress: () => `${Math.min(3, G.discoveredSpecies.filter(s => CHAPTER_1_SPECIES.find(cs => cs.id===s)).length)}/3` },
+      { id: 'survive_2', label: 'Survive 2 loops', check: () => G.loopsThisChapter >= 2, progress: () => `${Math.min(2, G.loopsThisChapter)}/2` },
+      { id: 'collect_50', label: 'Collect 50 Temporal Residue', check: () => G.totalResidue >= 50, progress: () => `${Math.min(50, G.totalResidue)}/50` },
+    ],
+    bgGradient: ['#0a0e1a', '#0d1428'],
+    accentColor: '#7af8d4',
+    catastropheTime: 65,
+  },
+  2: {
+    title: 'The First Garden',
+    subtitle: '"The soil remembers what the mind forgets."',
+    species: CHAPTER_2_SPECIES,
+    objectives: [
+      { id: 'discover_2_ch2', label: 'Discover 2 new species', check: () => G.discoveredSpecies.filter(s => CHAPTER_2_SPECIES.find(cs => cs.id===s)).length >= 2, progress: () => `${Math.min(2, G.discoveredSpecies.filter(s => CHAPTER_2_SPECIES.find(cs => cs.id===s)).length)}/2` },
+      { id: 'combine_1', label: 'Combine two species', check: () => G.combinationsFound.length >= 1, progress: () => `${Math.min(1, G.combinationsFound.length)}/1` },
+      { id: 'survive_3_ch2', label: 'Survive 3 loops', check: () => G.loopsThisChapter >= 3, progress: () => `${Math.min(3, G.loopsThisChapter)}/3` },
+      { id: 'collect_200', label: 'Collect 200 Temporal Residue', check: () => G.totalResidue >= 200, progress: () => `${Math.min(200, Math.floor(G.totalResidue))}/200` },
+    ],
+    bgGradient: ['#0e1420', '#141e28'],
+    accentColor: '#88e8c0',
+    catastropheTime: 80,
+    combineHint: 'Place two different species near each other...'
+  }
+};
+
+// ============================================================
+//  INITIALIZATION
+// ============================================================
+function init() {
+  loadState();
+  setupCanvas();
+  setupBiome();
+  setupTapHandler();
+  renderUI();
+  renderObjectives();
+  renderChronicle();
+  renderMarket();
+  renderSpeciesList();
+  applyChapterTheme();
+
+  if (!G.hasSeenIntro) {
+    G.hasSeenIntro = true;
+    addChronicleEntry('start');
+    showToast("You wake up. The ground is wet.", 'story');
+    saveState();
+  }
+
+  lastTime = performance.now();
+  gameLoop(lastTime);
+}
+
+// ============================================================
+//  SAVE / LOAD
+// ============================================================
+function saveState() {
+  G.lastSaveTime = Date.now();
+  try { localStorage.setItem('chronicle_save', JSON.stringify(G)); } catch(e){}
+}
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem('chronicle_save');
+    if (saved) {
+      G = { ...DEFAULT_STATE, ...JSON.parse(saved) };
+    } else {
+      G = { ...DEFAULT_STATE };
+    }
+  } catch(e) {
+    G = { ...DEFAULT_STATE };
+  }
+}
+
+function resetGame() {
+  localStorage.removeItem('chronicle_save');
+  G = { ...DEFAULT_STATE };
+  location.reload();
+}
+
+// ============================================================
+//  CANVAS (Particles)
+// ============================================================
+let canvas, ctx, canvasW, canvasH;
+
+function setupCanvas() {
+  canvas = document.getElementById('particle-canvas');
+  ctx = canvas.getContext('2d');
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+}
+
+function resizeCanvas() {
+  const container = document.getElementById('biome-container');
+  canvasW = canvas.width = container.clientWidth;
+  canvasH = canvas.height = container.clientHeight;
+}
+
+function spawnParticles(x, y, count, color) {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x, y,
+      vx: (Math.random()-0.5) * 3,
+      vy: -Math.random() * 3 - 1,
+      life: 1,
+      decay: 0.01 + Math.random() * 0.02,
+      size: 1 + Math.random() * 3,
+      color: color || '#7af8d4'
+    });
+  }
+}
+
+function spawnAmbientParticles() {
+  if (particles.length < 30 && Math.random() < 0.1) {
+    const chapter = CHAPTERS[G.chapter];
+    const colors = G.chapter === 1 ? ['#7af8d4','#b088f0','#60c8f0'] : ['#f0a040','#88e8c0','#f06080'];
+    particles.push({
+      x: Math.random() * canvasW,
+      y: canvasH + 5,
+      vx: (Math.random()-0.5) * 0.5,
+      vy: -0.3 - Math.random() * 0.5,
+      life: 1,
+      decay: 0.003 + Math.random() * 0.005,
+      size: 1 + Math.random() * 2,
+      color: colors[Math.floor(Math.random()*colors.length)]
+    });
+  }
+}
+
+function updateParticles(dt) {
+  for (let i = particles.length-1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx * dt * 60;
+    p.y += p.vy * dt * 60;
+    p.life -= p.decay * dt * 60;
+    if (p.life <= 0) { particles.splice(i,1); }
+  }
+}
+
+function drawParticles() {
+  ctx.clearRect(0, 0, canvasW, canvasH);
+  for (const p of particles) {
+    ctx.globalAlpha = p.life * 0.8;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+    ctx.fill();
+    // glow
+    ctx.globalAlpha = p.life * 0.2;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size*3, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ============================================================
+//  BIOME SVG
+// ============================================================
+function setupBiome() {
+  const svg = document.getElementById('biome-svg');
+  svg.innerHTML = '';
+  biomeCreatures = [];
+  drawBiomeBackground(svg);
+  drawDiscoveredSpecies(svg);
+}
+
+function drawBiomeBackground(svg) {
+  const w = 480, h = 400;
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+
+  // Background gradient
+  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+  const grad = document.createElementNS('http://www.w3.org/2000/svg','linearGradient');
+  grad.setAttribute('id','bg-grad'); grad.setAttribute('x1','0'); grad.setAttribute('y1','0');
+  grad.setAttribute('x2','0'); grad.setAttribute('y2','1');
+  const colors = CHAPTERS[G.chapter].bgGradient;
+  const s1 = document.createElementNS('http://www.w3.org/2000/svg','stop');
+  s1.setAttribute('offset','0%'); s1.setAttribute('stop-color', colors[0]);
+  const s2 = document.createElementNS('http://www.w3.org/2000/svg','stop');
+  s2.setAttribute('offset','100%'); s2.setAttribute('stop-color', colors[1]);
+  grad.appendChild(s1); grad.appendChild(s2);
+  defs.appendChild(grad);
+
+  // Glow filter
+  const filter = document.createElementNS('http://www.w3.org/2000/svg','filter');
+  filter.setAttribute('id','glow');
+  const blur = document.createElementNS('http://www.w3.org/2000/svg','feGaussianBlur');
+  blur.setAttribute('stdDeviation','3'); blur.setAttribute('result','coloredBlur');
+  const merge = document.createElementNS('http://www.w3.org/2000/svg','feMerge');
+  const mn1 = document.createElementNS('http://www.w3.org/2000/svg','feMergeNode');
+  mn1.setAttribute('in','coloredBlur');
+  const mn2 = document.createElementNS('http://www.w3.org/2000/svg','feMergeNode');
+  mn2.setAttribute('in','SourceGraphic');
+  merge.appendChild(mn1); merge.appendChild(mn2);
+  filter.appendChild(blur); filter.appendChild(merge);
+  defs.appendChild(filter);
+
+  svg.appendChild(defs);
+
+  // BG rect
+  const bg = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  bg.setAttribute('width', w); bg.setAttribute('height', h);
+  bg.setAttribute('fill', 'url(#bg-grad)');
+  svg.appendChild(bg);
+
+  // Ground
+  if (G.chapter === 1) {
+    // Primordial: watery ground with puddles
+    const ground = document.createElementNS('http://www.w3.org/2000/svg','path');
+    const gy = h * 0.7;
+    ground.setAttribute('d', `M0,${gy} Q80,${gy-10} 160,${gy+5} Q240,${gy+15} 320,${gy-5} Q400,${gy+8} ${w},${gy} V${h} H0 Z`);
+    ground.setAttribute('fill', 'rgba(20,35,50,0.8)');
+    svg.appendChild(ground);
+
+    // Puddles
+    for (let i = 0; i < 3; i++) {
+      const puddle = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+      puddle.setAttribute('cx', 60+i*160+Math.random()*60);
+      puddle.setAttribute('cy', gy+20+Math.random()*30);
+      puddle.setAttribute('rx', 20+Math.random()*25);
+      puddle.setAttribute('ry', 4+Math.random()*4);
+      puddle.setAttribute('fill', 'rgba(60,100,140,0.25)');
+      puddle.style.animation = `breathe ${3+Math.random()*2}s ease-in-out ${Math.random()*2}s infinite`;
+      svg.appendChild(puddle);
+    }
+
+    // Rocks
+    for (let i = 0; i < 5; i++) {
+      const rock = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
+      rock.setAttribute('cx', Math.random()*w);
+      rock.setAttribute('cy', gy+10+Math.random()*50);
+      rock.setAttribute('rx', 3+Math.random()*8);
+      rock.setAttribute('ry', 2+Math.random()*4);
+      rock.setAttribute('fill', `rgba(40,50,65,${0.4+Math.random()*0.3})`);
+      svg.appendChild(rock);
+    }
+  } else {
+    // Chapter 2: Soil with grass tufts
+    const ground = document.createElementNS('http://www.w3.org/2000/svg','path');
+    const gy = h * 0.65;
+    ground.setAttribute('d', `M0,${gy} Q60,${gy-8} 120,${gy+3} Q200,${gy-12} 280,${gy+6} Q360,${gy-4} ${w},${gy} V${h} H0 Z`);
+    ground.setAttribute('fill', 'rgba(30,40,30,0.8)');
+    svg.appendChild(ground);
+
+    // Soil texture
+    const soil = document.createElementNS('http://www.w3.org/2000/svg','path');
+    soil.setAttribute('d', `M0,${gy+15} Q120,${gy+8} 240,${gy+18} Q360,${gy+12} ${w},${gy+20} V${h} H0 Z`);
+    soil.setAttribute('fill', 'rgba(40,30,20,0.5)');
+    svg.appendChild(soil);
+
+    // Grass tufts
+    for (let i = 0; i < 12; i++) {
+      const gx = Math.random()*w;
+      const gy2 = gy - 5 + Math.random()*15;
+      const tuft = document.createElementNS('http://www.w3.org/2000/svg','g');
+      tuft.setAttribute('transform', `translate(${gx},${gy2})`);
+      for (let j = 0; j < 3; j++) {
+        const blade = document.createElementNS('http://www.w3.org/2000/svg','path');
+        const bx = (j-1)*4;
+        const bh = 8+Math.random()*12;
+        blade.setAttribute('d', `M${bx},0 Q${bx+(Math.random()-0.5)*6},${-bh/2} ${bx+(Math.random()-0.5)*4},${-bh}`);
+        blade.setAttribute('stroke', `rgba(60,${100+Math.random()*40},60,${0.3+Math.random()*0.3})`);
+        blade.setAttribute('stroke-width', '1.5');
+        blade.setAttribute('fill', 'none');
+        blade.setAttribute('stroke-linecap', 'round');
+        tuft.appendChild(blade);
+      }
+      tuft.style.animation = `breathe ${3+Math.random()*2}s ease-in-out ${Math.random()*3}s infinite`;
+      svg.appendChild(tuft);
+    }
+  }
+
+  // Ambient dots (stars / floating bits)
+  for (let i = 0; i < 20; i++) {
+    const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx', Math.random()*w);
+    dot.setAttribute('cy', Math.random()*h*0.6);
+    dot.setAttribute('r', 0.5+Math.random()*1.5);
+    const colors = G.chapter === 1 ? ['122,248,212','176,136,240','96,200,240'] : ['240,160,64','136,232,192','240,96,128'];
+    const c = colors[Math.floor(Math.random()*colors.length)];
+    dot.setAttribute('fill', `rgba(${c},${0.1+Math.random()*0.3})`);
+    dot.style.animation = `pulse ${2+Math.random()*4}s ease-in-out ${Math.random()*3}s infinite`;
+    svg.appendChild(dot);
+  }
+}
+
+function drawDiscoveredSpecies(svg) {
+  const currentChapterSpecies = CHAPTERS[G.chapter].species;
+  const allSpecies = [...CHAPTER_1_SPECIES, ...CHAPTER_2_SPECIES, ...COMBINATIONS];
+  const h = 400;
+
+  G.discoveredSpecies.forEach(sid => {
+    const specDef = allSpecies.find(s => s.id === sid);
+    if (!specDef) return;
+
+    // Place in biome
+    const count = 1 + Math.floor(Math.random()*2);
+    for (let i = 0; i < count; i++) {
+      const x = 40 + Math.random() * 400;
+      const y = h * 0.5 + Math.random() * (h * 0.35);
+      const el = specDef.generate(x, y);
+      el.setAttribute('filter', 'url(#glow)');
+      svg.appendChild(el);
+      biomeCreatures.push({ el, x, y, species: sid });
+    }
+  });
+}
+
+// ============================================================
+//  TAP HANDLER
+// ============================================================
+function setupTapHandler() {
+  const biome = document.getElementById('biome-container');
+
+  const handleTap = (ex, ey) => {
+    const rect = biome.getBoundingClientRect();
+    const x = ex - rect.left;
+    const y = ey - rect.top;
+
+    // Residue collection
+    const amount = Math.max(1, Math.floor(G.tapMultiplier * (1 + G.loops * 0.1)));
+    G.residue += amount;
+    G.totalResidue += amount;
+
+    // Visual feedback
+    spawnParticles(x, y, 4 + Math.min(amount, 10), CHAPTERS[G.chapter].accentColor);
+    showResiduePopup(x, y, amount);
+    showTapRipple(x, y);
+
+    // Random protagonist quote
+    if (Math.random() < 0.03) {
+      const quotes = PROTAGONIST_QUOTES.tap;
+      showToast(quotes[Math.floor(Math.random()*quotes.length)], 'story');
+    }
+
+    // Hide tap hint after first tap
+    const hint = document.getElementById('tap-hint');
+    if (hint) hint.style.opacity = '0';
+
+    // Species discovery check
+    checkDiscovery();
+
+    renderUI();
+    checkObjectives();
+    saveState();
+  };
+
+  biome.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    for (const touch of e.changedTouches) {
+      handleTap(touch.clientX, touch.clientY);
+    }
+  }, { passive: false });
+
+  biome.addEventListener('click', (e) => {
+    if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
+    handleTap(e.clientX, e.clientY);
+  });
+}
+
+function showResiduePopup(x, y, amount) {
+  const container = document.getElementById('biome-container');
+  const el = document.createElement('div');
+  el.className = 'residue-popup';
+  el.textContent = `+${amount}`;
+  el.style.left = x + 'px';
+  el.style.top = (y - 20) + 'px';
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+
+function showTapRipple(x, y) {
+  const container = document.getElementById('biome-container');
+  const el = document.createElement('div');
+  el.className = 'tap-ripple';
+  el.style.left = (x - 15) + 'px';
+  el.style.top = (y - 15) + 'px';
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 800);
+}
+
+// ============================================================
+//  DISCOVERY SYSTEM
+// ============================================================
+function checkDiscovery() {
+  if (isShowingDiscovery) return;
+
+  const chapter = CHAPTERS[G.chapter];
+  const available = chapter.species.filter(s => !G.discoveredSpecies.includes(s.id));
+
+  // Also check combinations if in ch2+
+  let combosAvailable = [];
+  if (G.chapter >= 2) {
+    combosAvailable = COMBINATIONS.filter(c =>
+      !G.combinationsFound.includes(c.id) &&
+      c.ingredients.every(ing => G.discoveredSpecies.includes(ing))
+    );
+  }
+
+  if (available.length > 0 && Math.random() < G.discoveryChance) {
+    const species = available[Math.floor(Math.random()*available.length)];
+    discoverSpecies(species);
+  } else if (combosAvailable.length > 0 && Math.random() < G.discoveryChance * 0.7) {
+    const combo = combosAvailable[Math.floor(Math.random()*combosAvailable.length)];
+    discoverCombination(combo);
+  }
+}
+
+function discoverSpecies(species) {
+  G.discoveredSpecies.push(species.id);
+  isShowingDiscovery = true;
+
+  // Trigger chronicle
+  const speciesInChapter = G.discoveredSpecies.filter(s =>
+    CHAPTERS[G.chapter].species.find(cs => cs.id === s)
+  ).length;
+  addChronicleEntry('species_' + speciesInChapter);
+
+  // Show discovery overlay
+  const overlay = document.getElementById('discovery-overlay');
+  const svgEl = document.getElementById('discovery-svg');
+  svgEl.innerHTML = '';
+  svgEl.setAttribute('viewBox', '-30 -30 60 60');
+  const creature = species.generate(0, 0);
+  creature.setAttribute('transform', 'scale(2)');
+  creature.setAttribute('filter', '');
+  svgEl.appendChild(creature);
+
+  document.getElementById('discovery-name').textContent = species.name;
+  document.getElementById('discovery-type').textContent = species.type;
+  document.getElementById('discovery-desc').textContent = species.desc;
+  document.getElementById('discovery-quote').textContent = species.quote;
+
+  overlay.classList.add('visible');
+
+  showToast(`New species discovered: ${species.name}`, 'discovery');
+  setupBiome();
+  renderSpeciesList();
+  checkObjectives();
+  saveState();
+}
+
+function discoverCombination(combo) {
+  G.combinationsFound.push(combo.id);
+  G.discoveredSpecies.push(combo.id);
+  isShowingDiscovery = true;
+
+  addChronicleEntry('species_' + G.discoveredSpecies.length);
+
+  const overlay = document.getElementById('discovery-overlay');
+  const svgEl = document.getElementById('discovery-svg');
+  svgEl.innerHTML = '';
+  svgEl.setAttribute('viewBox', '-30 -30 60 60');
+  const creature = combo.generate(0, 0);
+  creature.setAttribute('transform', 'scale(2)');
+  svgEl.appendChild(creature);
+
+  document.getElementById('discovery-name').textContent = combo.name;
+  document.getElementById('discovery-type').textContent = combo.type + ' (combination)';
+  document.getElementById('discovery-desc').textContent = combo.desc;
+  document.getElementById('discovery-quote').textContent = combo.quote;
+
+  overlay.classList.add('visible');
+
+  showToast(`Combination discovered: ${combo.name}!`, 'discovery');
+  setupBiome();
+  renderSpeciesList();
+  checkObjectives();
+  saveState();
+}
+
+function dismissDiscovery() {
+  document.getElementById('discovery-overlay').classList.remove('visible');
+  isShowingDiscovery = false;
+}
+
+// ============================================================
+//  CATASTROPHE / LOOP SYSTEM
+// ============================================================
+function triggerCatastrophe() {
+  if (catastropheActive) return;
+  catastropheActive = true;
+
+  const container = document.getElementById('game-container');
+  container.classList.add('shaking');
+
+  // Protagonist quote
+  const quotes = PROTAGONIST_QUOTES.catastrophe;
+  showToast(quotes[Math.floor(Math.random()*quotes.length)], 'catastrophe');
+
+  addChronicleEntry('catastrophe_' + (G.loops + 1));
+
+  setTimeout(() => {
+    container.classList.remove('shaking');
+    showLoopTransition();
+  }, 1500);
+}
+
+function showLoopTransition() {
+  const overlay = document.getElementById('loop-overlay');
+  const textEl = document.getElementById('loop-text');
+
+  const quotes = PROTAGONIST_QUOTES.loop;
+  const quote = quotes[Math.floor(Math.random()*quotes.length)];
+
+  overlay.style.background = 'rgba(5,8,15,0)';
+  overlay.classList.add('visible');
+
+  // Fade to white then dark
+  let progress = 0;
+  const fadeIn = setInterval(() => {
+    progress += 0.02;
+    if (progress >= 1) {
+      clearInterval(fadeIn);
+      overlay.style.background = 'rgba(200,210,220,0.95)';
+      textEl.textContent = quote;
+      textEl.style.color = '#1a2030';
+
+      setTimeout(() => {
+        // Fade back to dark
+        let p2 = 0;
+        const fadeOut = setInterval(() => {
+          p2 += 0.02;
+          if (p2 >= 1) {
+            clearInterval(fadeOut);
+            completeLoop();
+            overlay.classList.remove('visible');
+          } else {
+            const r = Math.floor(200 - p2*190);
+            const g2 = Math.floor(210 - p2*196);
+            const b = Math.floor(220 - p2*194);
+            overlay.style.background = `rgba(${r},${g2},${b},0.95)`;
+            textEl.style.color = `rgba(${Math.floor(26+p2*174)},${Math.floor(32+p2*176)},${Math.floor(48+p2*178)},1)`;
+          }
+        }, 30);
+      }, 2000);
+    } else {
+      const r = Math.floor(5 + progress*195);
+      const g2 = Math.floor(8 + progress*202);
+      const b = Math.floor(15 + progress*205);
+      overlay.style.background = `rgba(${r},${g2},${b},0.95)`;
+    }
+  }, 30);
+}
+
+function completeLoop() {
+  G.loops++;
+  G.loopsThisChapter++;
+  G.catastropheTimer = 0;
+  catastropheActive = false;
+
+  addChronicleEntry('loop_' + G.loopsThisChapter);
+
+  // Rebuild biome
+  setupBiome();
+  renderUI();
+  checkObjectives();
+  saveState();
+}
+
+// ============================================================
+//  CHAPTER TRANSITION
+// ============================================================
+function transitionToChapter(num) {
+  if (G.chapterComplete) return;
+  G.chapterComplete = true;
+
+  addChronicleEntry('chapter_end');
+
+  const overlay = document.getElementById('transition-overlay');
+  const textEl = document.getElementById('transition-text');
+  const titleEl = document.getElementById('transition-chapter-title');
+  const subEl = document.getElementById('transition-subtitle');
+
+  textEl.textContent = '';
+  titleEl.textContent = '';
+  subEl.textContent = '';
+  textEl.style.opacity = '0';
+  titleEl.style.opacity = '0';
+  subEl.style.opacity = '0';
+
+  overlay.style.background = 'rgba(10,14,26,0)';
+  overlay.classList.add('visible');
+
+  // Phase 1: fade to white
+  let p = 0;
+  const phase1 = setInterval(() => {
+    p += 0.01;
+    if (p >= 1) {
+      clearInterval(phase1);
+      overlay.style.background = 'rgba(220,225,235,0.98)';
+
+      // Phase 2: show transition text
+      setTimeout(() => {
+        textEl.textContent = 'The fog clears. Something shifts.';
+        textEl.style.color = '#2a3040';
+        textEl.style.opacity = '1';
+        textEl.style.animation = 'fadeIn 1.5s ease';
+      }, 500);
+
+      // Phase 3: fade text, show new chapter
+      setTimeout(() => {
+        textEl.style.opacity = '0';
+      }, 3500);
+
+      setTimeout(() => {
+        // Fade to dark
+        let p2 = 0;
+        const phase3 = setInterval(() => {
+          p2 += 0.015;
+          if (p2 >= 1) {
+            clearInterval(phase3);
+            overlay.style.background = 'rgba(10,14,26,0.98)';
+
+            // Apply chapter change
+            G.chapter = num;
+            G.chapterComplete = false;
+            G.loopsThisChapter = 0;
+            G.catastropheTimer = 0;
+            G.catastropheDuration = CHAPTERS[num].catastropheTime;
+            catastropheActive = false;
+
+            addChronicleEntry('start');
+
+            // Show new title
+            const ch = CHAPTERS[num];
+            titleEl.textContent = `Chapter ${num}: ${ch.title}`;
+            titleEl.style.color = ch.accentColor;
+            titleEl.style.opacity = '1';
+            titleEl.style.animation = 'chapterReveal 2s ease forwards';
+
+            setTimeout(() => {
+              subEl.textContent = ch.subtitle;
+              subEl.style.opacity = '0.7';
+              subEl.style.animation = 'subtitleReveal 1s ease forwards';
+            }, 1500);
+
+            // Dismiss and rebuild
+            setTimeout(() => {
+              overlay.classList.remove('visible');
+              titleEl.style.opacity = '0';
+              subEl.style.opacity = '0';
+              applyChapterTheme();
+              setupBiome();
+              renderUI();
+              renderObjectives();
+              renderChronicle();
+              renderMarket();
+              renderSpeciesList();
+              saveState();
+
+              showToast('A new chapter begins.', 'story');
+            }, 4000);
+          } else {
+            const r = Math.floor(220 - p2*210);
+            const g2 = Math.floor(225 - p2*211);
+            const b = Math.floor(235 - p2*209);
+            overlay.style.background = `rgba(${r},${g2},${b},0.98)`;
+          }
+        }, 30);
+      }, 4500);
+    } else {
+      const r = Math.floor(10 + p*210);
+      const g2 = Math.floor(14 + p*211);
+      const b = Math.floor(26 + p*209);
+      overlay.style.background = `rgba(${r},${g2},${b},0.98)`;
+    }
+  }, 25);
+}
+
+// ============================================================
+//  OBJECTIVES
+// ============================================================
+function renderObjectives() {
+  const list = document.getElementById('objectives-list');
+  const chapter = CHAPTERS[G.chapter];
+  if (!chapter) return;
+
+  list.innerHTML = '';
+  chapter.objectives.forEach(obj => {
+    const completed = obj.check();
+    const div = document.createElement('div');
+    div.className = `objective ${completed ? 'completed' : ''}`;
+    div.innerHTML = `
+      <div class="obj-check">${completed ? '&#10003;' : ''}</div>
+      <span>${obj.label}</span>
+      <span class="obj-progress">${obj.progress()}</span>
+    `;
+    list.appendChild(div);
+  });
+
+  // Update species total display
+  const totalEl = document.getElementById('species-total');
+  if (G.chapter === 1) totalEl.textContent = '3';
+  else totalEl.textContent = String(CHAPTER_1_SPECIES.length + CHAPTER_2_SPECIES.length + COMBINATIONS.length);
+}
+
+function checkObjectives() {
+  const chapter = CHAPTERS[G.chapter];
+  if (!chapter || G.chapterComplete) return;
+
+  const allComplete = chapter.objectives.every(obj => obj.check());
+
+  renderObjectives();
+
+  if (allComplete && G.chapter === 1) {
+    setTimeout(() => transitionToChapter(2), 1500);
+  }
+}
+
+// ============================================================
+//  CHRONICLE
+// ============================================================
+function addChronicleEntry(trigger) {
+  const fragments = STORY_FRAGMENTS[G.chapter];
+  if (!fragments) return;
+
+  const fragment = fragments.find(f => f.trigger === trigger);
+  if (!fragment) return;
+
+  // Don't duplicate
+  const entryKey = `ch${G.chapter}_${trigger}`;
+  if (G.chronicleEntries.includes(entryKey)) return;
+
+  G.chronicleEntries.push(entryKey);
+
+  // Show badge
+  const badge = document.getElementById('chronicle-badge');
+  if (badge) badge.style.display = 'block';
+
+  renderChronicle();
+  saveState();
+}
+
+function renderChronicle() {
+  const container = document.getElementById('chronicle-entries');
+
+  if (G.chronicleEntries.length === 0) {
+    container.innerHTML = '<div class="chronicle-empty">No entries yet. The pages are blank... for now.</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+
+  // Group by chapter
+  const entries = [];
+  G.chronicleEntries.forEach(key => {
+    const match = key.match(/^ch(\d+)_(.+)$/);
+    if (!match) return;
+    const chNum = parseInt(match[1]);
+    const trigger = match[2];
+    const fragments = STORY_FRAGMENTS[chNum];
+    if (!fragments) return;
+    const fragment = fragments.find(f => f.trigger === trigger);
+    if (!fragment) return;
+    entries.push({ chapter: chNum, text: fragment.text, type: fragment.type });
+  });
+
+  entries.forEach(entry => {
+    const div = document.createElement('div');
+    div.className = `chronicle-entry ${entry.type === 'protagonist' ? 'protagonist' : ''}`;
+    div.innerHTML = `
+      <div class="entry-chapter">Chapter ${entry.chapter}</div>
+      <div class="entry-text">"${entry.text}"</div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ============================================================
+//  SPECIES LIST
+// ============================================================
+function renderSpeciesList() {
+  const container = document.getElementById('species-list');
+  const allSpecies = [...CHAPTER_1_SPECIES, ...CHAPTER_2_SPECIES, ...COMBINATIONS];
+
+  if (G.discoveredSpecies.length === 0) {
+    container.innerHTML = '<div class="chronicle-empty">No species discovered yet. Tap the biome to begin exploring.</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+
+  G.discoveredSpecies.forEach(sid => {
+    const spec = allSpecies.find(s => s.id === sid);
+    if (!spec) return;
+
+    const card = document.createElement('div');
+    card.className = 'species-card';
+
+    const svgWrap = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svgWrap.setAttribute('viewBox', '-24 -24 48 48');
+    svgWrap.setAttribute('width', '48');
+    svgWrap.setAttribute('height', '48');
+    const creature = spec.generate(0, 0);
+    svgWrap.appendChild(creature);
+
+    const info = document.createElement('div');
+    info.className = 'species-info';
+    info.innerHTML = `
+      <div class="species-type">${spec.type}</div>
+      <h3>${spec.name}</h3>
+      <p>${spec.desc}</p>
+    `;
+
+    card.appendChild(svgWrap);
+    card.appendChild(info);
+    container.appendChild(card);
+  });
+
+  // Combination hint for ch2
+  if (G.chapter >= 2 && G.combinationsFound.length === 0 && G.discoveredSpecies.length >= 2) {
+    const hint = document.createElement('div');
+    hint.className = 'combine-hint';
+    hint.textContent = 'Some species may combine when near each other... keep tapping.';
+    container.appendChild(hint);
+  }
+}
+
+// ============================================================
+//  MARKETPLACE
+// ============================================================
+function renderMarket() {
+  const container = document.getElementById('market-content');
+  container.innerHTML = '';
+
+  const items = MARKET_ITEMS[G.chapter] || MARKET_ITEMS[1];
+
+  const category = document.createElement('div');
+  category.className = 'market-category';
+
+  const title = document.createElement('h3');
+  title.textContent = G.chapter === 1 ? 'Survival Essentials' : 'Advanced Tools';
+  category.appendChild(title);
+
+  items.forEach(item => {
+    const purchased = G.purchasedUpgrades.includes(item.id);
+    const canAfford = G.residue >= item.cost;
+
+    const div = document.createElement('div');
+    div.className = 'market-item';
+    div.innerHTML = `
+      <div class="market-item-info">
+        <h4>${item.name}</h4>
+        <p>${item.desc}</p>
+      </div>
+    `;
+
+    const btn = document.createElement('button');
+    btn.className = `market-buy ${purchased ? 'purchased' : ''}`;
+    if (purchased) {
+      btn.textContent = 'Owned';
+      btn.disabled = true;
+    } else {
+      btn.textContent = `${item.cost} TR`;
+      btn.disabled = !canAfford;
+      btn.onclick = () => purchaseItem(item);
+    }
+    div.appendChild(btn);
+    category.appendChild(div);
+  });
+
+  container.appendChild(category);
+
+  // Also show previous chapter items if in ch2
+  if (G.chapter >= 2) {
+    const prevItems = MARKET_ITEMS[1];
+    const prevCat = document.createElement('div');
+    prevCat.className = 'market-category';
+    const prevTitle = document.createElement('h3');
+    prevTitle.textContent = 'Chapter 1 — Survival Essentials';
+    prevCat.appendChild(prevTitle);
+
+    prevItems.forEach(item => {
+      const purchased = G.purchasedUpgrades.includes(item.id);
+      const canAfford = G.residue >= item.cost;
+      const div = document.createElement('div');
+      div.className = 'market-item';
+      div.innerHTML = `
+        <div class="market-item-info">
+          <h4>${item.name}</h4>
+          <p>${item.desc}</p>
+        </div>
+      `;
+      const btn = document.createElement('button');
+      btn.className = `market-buy ${purchased ? 'purchased' : ''}`;
+      if (purchased) {
+        btn.textContent = 'Owned';
+        btn.disabled = true;
+      } else {
+        btn.textContent = `${item.cost} TR`;
+        btn.disabled = !canAfford;
+        btn.onclick = () => purchaseItem(item);
+      }
+      div.appendChild(btn);
+      prevCat.appendChild(div);
+    });
+    container.appendChild(prevCat);
+  }
+}
+
+function purchaseItem(item) {
+  if (G.residue < item.cost || G.purchasedUpgrades.includes(item.id)) return;
+
+  G.residue -= item.cost;
+  G.purchasedUpgrades.push(item.id);
+  item.effect();
+
+  showToast(`Acquired: ${item.name}`, 'discovery');
+  renderMarket();
+  renderUI();
+  saveState();
+}
+
+// ============================================================
+//  UI RENDERING
+// ============================================================
+function renderUI() {
+  document.getElementById('residue-count').textContent = formatNumber(Math.floor(G.residue));
+  document.getElementById('loop-count').textContent = G.loops;
+  document.getElementById('species-count').textContent = G.discoveredSpecies.length;
+  document.getElementById('chapter-num').textContent = G.chapter;
+
+  // Catastrophe bar
+  const fill = document.getElementById('catastrophe-fill');
+  const label = document.getElementById('catastrophe-label');
+  const pct = Math.min(100, (G.catastropheTimer / G.catastropheDuration) * 100);
+  fill.style.width = pct + '%';
+  if (pct > 60) {
+    label.style.opacity = '1';
+    fill.style.background = `linear-gradient(90deg, #ff5050, #ff3030, #ff5050)`;
+  } else if (pct > 30) {
+    label.style.opacity = '0.5';
+  } else {
+    label.style.opacity = '0';
+  }
+}
+
+function formatNumber(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+  return n.toString();
+}
+
+function applyChapterTheme() {
+  const ch = CHAPTERS[G.chapter];
+  document.getElementById('chapter-title').textContent = ch.title;
+  document.getElementById('chapter-title').style.color = ch.accentColor;
+  document.getElementById('chapter-title').style.textShadow = `0 0 12px ${ch.accentColor}80, 0 0 24px ${ch.accentColor}30`;
+  document.getElementById('chapter-subtitle').textContent = ch.subtitle;
+  document.body.style.background = ch.bgGradient[0];
+}
+
+// ============================================================
+//  TOAST NOTIFICATIONS
+// ============================================================
+function showToast(text, type = '') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = text;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3200);
+}
+
+// ============================================================
+//  PANEL NAVIGATION
+// ============================================================
+function switchPanel(panelId) {
+  // Update nav buttons
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`[data-panel="${panelId}"]`);
+  if (btn) btn.classList.add('active');
+
+  if (panelId === 'biome') {
+    closePanel();
+    return;
+  }
+
+  // Close existing panel
+  document.querySelectorAll('.panel-overlay').forEach(p => p.classList.remove('visible'));
+
+  // Open requested panel
+  const panel = document.getElementById(panelId);
+  if (panel) {
+    panel.classList.add('visible');
+
+    // Clear badge
+    if (panelId === 'chronicle') {
+      const badge = document.getElementById('chronicle-badge');
+      if (badge) badge.style.display = 'none';
+    }
+
+    // Refresh content
+    if (panelId === 'market') renderMarket();
+    if (panelId === 'species-panel') renderSpeciesList();
+  }
+}
+
+function closePanel() {
+  document.querySelectorAll('.panel-overlay').forEach(p => p.classList.remove('visible'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('[data-panel="biome"]').classList.add('active');
+}
+
+// ============================================================
+//  GAME LOOP
+// ============================================================
+function gameLoop(timestamp) {
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+  lastTime = timestamp;
+
+  gameTimer += dt;
+
+  // Catastrophe timer (forced)
+  if (!catastropheActive && !G.chapterComplete && !isShowingDiscovery) {
+    G.catastropheTimer += dt;
+    if (G.catastropheTimer >= G.catastropheDuration) {
+      triggerCatastrophe();
+    }
+  }
+
+  // Auto-collect
+  if (G.autoCollectRate > 0) {
+    autoCollectTimer += dt;
+    if (autoCollectTimer >= 1) {
+      autoCollectTimer -= 1;
+      const amount = G.autoCollectRate * (1 + G.loops * 0.1);
+      G.residue += amount;
+      G.totalResidue += amount;
+      renderUI();
+      checkObjectives();
+
+      // Passive discovery check (lower chance)
+      if (Math.random() < G.discoveryChance * 0.3) {
+        checkDiscovery();
+      }
+    }
+  }
+
+  // Ambient particles
+  spawnAmbientParticles();
+  updateParticles(dt);
+  drawParticles();
+
+  // Periodic save
+  if (gameTimer % 10 < dt) {
+    saveState();
+  }
+
+  // Periodic UI update
+  if (gameTimer % 0.5 < dt) {
+    renderUI();
+  }
+
+  animFrame = requestAnimationFrame(gameLoop);
+}
+
+// ============================================================
+//  STARTUP
+// ============================================================
+document.addEventListener('DOMContentLoaded', init);
+
+// Handle visibility changes
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    saveState();
+  } else {
+    // Calculate offline progress
+    const now = Date.now();
+    const elapsed = (now - G.lastSaveTime) / 1000;
+    if (elapsed > 5 && G.autoCollectRate > 0) {
+      const offlineGain = Math.floor(G.autoCollectRate * Math.min(elapsed, 3600) * 0.5);
+      if (offlineGain > 0) {
+        G.residue += offlineGain;
+        G.totalResidue += offlineGain;
+        showToast(`While away: +${formatNumber(offlineGain)} Temporal Residue`, 'story');
+        renderUI();
+        saveState();
+      }
+    }
+    lastTime = performance.now();
+  }
+});
+</script>
+</body>
+</html>
