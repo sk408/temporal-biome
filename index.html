@@ -21,11 +21,15 @@
     <div class="resource" id="res-em"><span class="res-icon">&#9670;</span> <span id="em-count">0</span></div>
     <div class="resource" id="res-tokens"><span class="res-icon">&#9733;</span> <span id="token-count">0</span></div>
     <div class="resource" id="res-shards"><span class="res-icon">&#9830;</span> <span id="shard-count">0</span></div>
+    <div class="resource" id="res-threads" style="display:none;"><span class="res-icon">&#8767;</span> <span id="thread-count">0</span></div>
     <div class="resource" id="res-loop">Loop <span id="loop-count">0</span></div>
   </div>
 
   <!-- Active Buffs -->
   <div id="buff-bar" style="display:none;"></div>
+
+  <!-- Intervention Bar (Ch3+) -->
+  <div id="intervention-bar" style="display:none;"></div>
 
   <!-- Biome View (default panel) -->
   <div id="panel-biome" class="panel active">
@@ -61,6 +65,13 @@
     <div class="panel-scroll">
       <div id="codex-species"><h3>Species</h3><div id="species-grid"></div></div>
       <div id="codex-synergies"><h3>Synergies</h3><div id="synergy-list"></div></div>
+      <div id="codex-upgrades" style="display:none;"><h3>Species Upgrades</h3><div id="species-upgrades-list"></div></div>
+      <div id="codex-mycelium" style="display:none;"><h3>Mycelium Network</h3>
+        <div id="mycelium-stats"></div>
+        <div id="mycelium-slots"><div id="myc-slot-a" class="combine-slot">?</div><span>&#8767;</span><div id="myc-slot-b" class="combine-slot">?</div></div>
+        <button id="mycelium-link-btn" disabled>Create Link (10 Threads)</button>
+        <div id="mycelium-links-list"></div>
+      </div>
       <div id="codex-combine"><h3>Combine</h3>
         <div id="combine-slots"><div id="slot-a" class="combine-slot">?</div><span>+</span><div id="slot-b" class="combine-slot">?</div></div>
         <button id="combine-btn" disabled>Combine</button>

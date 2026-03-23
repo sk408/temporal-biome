@@ -1,6 +1,8 @@
 import { GENERATORS, MILESTONES } from '../data/generators.js';
 import { MULTIPLIERS, AUTOMATION, PERMANENT_UPGRADES } from '../data/upgrades.js';
 import { getSymbiosisBonus, hasAnySynergy } from './symbiosis.js';
+import { getMyceliumBonus } from './mycelium.js';
+import { getSpeciesOutputBonus, getSpeciesEchoBonus } from './species-upgrades.js';
 
 export function getCost(baseCost, owned, scaling) {
   return Math.floor(baseCost * Math.pow(scaling, owned));
@@ -46,13 +48,19 @@ export function getMultiplierBonus(state, effectType) {
 export function getTotalProduction(state) {
   const globalBonus = getGlobalMilestoneBonus(state);
   const harmonyBonus = getMultiplierBonus(state, 'generatorMultiplier');
+  const hasFlowBuff = (state.activeBuffs || []).some(b => b.id === 'redirectFlow');
   let total = 0;
 
   for (const [genId, count] of Object.entries(state.generators)) {
     const gen = GENERATORS[genId];
     if (!gen || count <= 0) continue;
     const milestoneMult = getMilestoneMultiplier(genId, count);
-    total += gen.baseOutput * count * milestoneMult;
+    let genOutput = gen.baseOutput * count * milestoneMult;
+    // Redirect Flow: 2x to targeted generators
+    if (hasFlowBuff && (state.flowBoostTargets || []).includes(genId)) {
+      genOutput *= 2;
+    }
+    total += genOutput;
   }
 
   total *= (1 + globalBonus + harmonyBonus);
@@ -60,6 +68,14 @@ export function getTotalProduction(state) {
   // Symbiosis bonus
   const symbiosisGeneratorBonus = getSymbiosisBonus(state, 'generatorMult');
   if (symbiosisGeneratorBonus > 0) total *= (1 + symbiosisGeneratorBonus);
+
+  // Mycelium network bonus
+  const myceliumBonus = getMyceliumBonus(state);
+  if (myceliumBonus > 0) total *= (1 + myceliumBonus);
+
+  // Species upgrade output bonus
+  const speciesBonus = getSpeciesOutputBonus(state);
+  if (speciesBonus > 0) total *= (1 + speciesBonus);
 
   // Track for achievement/objective
   state._hasSynergyBonus = hasAnySynergy(state);
@@ -128,8 +144,20 @@ export function calcEchoMatter(state) {
   const echoAmpLevel = state.permanentUpgrades?.echoAmplifier || 0;
   const echoAmpBonus = 1 + (0.2 * echoAmpLevel);
   const achieveBonus = 1 + (0.01 * (state.achievements?.length || 0));
+  const speciesEchoBonus = 1 + getSpeciesEchoBonus(state);
+  const networkBonus = 1 + ((state.myceliumLinks || []).length * 0.02);
 
-  return Math.floor(baseEm * chapterMult * echoAmpBonus * achieveBonus);
+  return Math.floor(baseEm * chapterMult * echoAmpBonus * achieveBonus * speciesEchoBonus * networkBonus);
+}
+
+export function getThreadProduction(state) {
+  let threads = 0;
+  for (const [genId, count] of Object.entries(state.generators)) {
+    const gen = GENERATORS[genId];
+    if (!gen || !gen.threadOutput || count <= 0) continue;
+    threads += gen.threadOutput * count;
+  }
+  return threads;
 }
 
 export function getTapValue(state) {

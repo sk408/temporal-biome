@@ -7,6 +7,11 @@ const SYNERGIES = [
   { a: 'petalfly', b: 'dewdrop', bonus: 0.10, desc: '+10% discovery chance', type: 'discoveryChance' },
   { a: 'luminmoss', b: 'rootweaver', bonus: 0.08, desc: '+8% all generator output', type: 'generatorMult' },
   { a: 'copperlichen', b: 'thornsprout', bonus: 0.12, desc: '+12% tap value', type: 'tapMult' },
+  // Chapter 3 synergies
+  { a: 'sporecap', b: 'glowshroom', bonus: 0.10, desc: '+10% all generator output', type: 'generatorMult' },
+  { a: 'mycelworm', b: 'trufflekin', bonus: 0.08, desc: '+8% discovery chance', type: 'discoveryChance' },
+  { a: 'lichenveil', b: 'fogbell', bonus: 0.06, desc: '+6% anomaly frequency', type: 'anomalyFreq' },
+  { a: 'moldweaver', b: 'rootweaver', bonus: 0.12, desc: '+12% all generator output', type: 'generatorMult' },
 ];
 
 export function getActiveSynergies(state) {

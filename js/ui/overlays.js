@@ -37,18 +37,26 @@ export function showDiscovery(species, callback) {
   setTimeout(() => overlay.addEventListener('pointerup', dismiss), 300);
 }
 
-export function showCatastrophe(callback) {
+export function showCatastrophe(callback, catastropheType = 'fog') {
   const overlay = document.getElementById('catastrophe-overlay');
   if (!overlay) { if (callback) callback(); return; }
 
-  overlay.innerHTML = `<div class="catastrophe-text">THE FOG CONSUMES ALL</div>`;
+  if (catastropheType === 'storm') {
+    overlay.innerHTML = `<div class="catastrophe-text" style="color:#f0d040">TEMPORAL STORM</div>`;
+  } else {
+    overlay.innerHTML = `<div class="catastrophe-text">THE FOG CONSUMES ALL</div>`;
+  }
   overlay.classList.add('visible');
 
   // Screen shake effect
   document.body.style.animation = 'shake 0.3s ease-in-out 3';
 
   setTimeout(() => {
-    overlay.innerHTML = `<div class="catastrophe-text" style="opacity:0.5;font-size:1rem;">Everything fades...</div>`;
+    if (catastropheType === 'storm') {
+      overlay.innerHTML = `<div class="catastrophe-text" style="opacity:0.5;font-size:1rem;color:#c0a830;">25% residue preserved...</div>`;
+    } else {
+      overlay.innerHTML = `<div class="catastrophe-text" style="opacity:0.5;font-size:1rem;">Everything fades...</div>`;
+    }
   }, 1500);
 
   setTimeout(() => {

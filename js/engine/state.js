@@ -1,7 +1,7 @@
 export function createState() {
   return {
     chapter: 1, loop: 0,
-    residue: 0, echoMatter: 0, anomalyTokens: 0, memoryShards: 0,
+    residue: 0, echoMatter: 0, anomalyTokens: 0, memoryShards: 0, myceliumThreads: 0,
     generators: {},
     unlockedGenerators: ['mossPatch', 'puddleFarm', 'sporeColony', 'rootCluster', 'primordialEngine'],
     multipliers: { sharpEyes: 0, ecosystemHarmony: 0, temporalSensitivity: 0, dejaVu: 0, speciesAffinity: 0 },
@@ -15,6 +15,8 @@ export function createState() {
     interventionCooldowns: {},
     invasiveSpecies: null, anomalyChain: 0, anomalyChainExpiry: 0,
     flowBoostTargets: [],
+    myceliumLinks: [],
+    catastropheType: 'fog',
     trEarnedThisLoop: 0, speciesDiscoveredThisLoop: 0,
     objectivesCompletedThisLoop: 0, anomalyTokensEarnedThisLoop: 0,
     marketRotationSeed: 0, marketPurchasedThisLoop: [],
@@ -31,10 +33,15 @@ export function resetLoop(state) {
   const blueprintLevel = state.permanentUpgrades?.generatorBlueprint || 0;
   const startingGenLevel = blueprintLevel > 0 ? [0, 5, 10, 25][blueprintLevel] || 0 : 0;
   const dejaVuLevel = state.multipliers?.dejaVu || 0;
+  const trEarnedBeforeReset = state.trEarnedThisLoop;
 
   state.loop += 1;
   state.totalLoops += 1;
   state.residue = startingTr;
+  // Temporal Storm keeps 25% of TR earned this loop
+  if (state.catastropheType === 'storm') {
+    state.residue += Math.floor(trEarnedBeforeReset * 0.25);
+  }
   state.trEarnedThisLoop = 0;
   state.speciesDiscoveredThisLoop = 0;
   state.objectivesCompletedThisLoop = 0;
@@ -60,6 +67,13 @@ export function resetLoop(state) {
   state.activeAnomalies = [];
   state.marketPurchasedThisLoop = [];
   state.marketRotationSeed = Date.now();
+
+  // Randomize next catastrophe type (Ch3+)
+  if (state.chapter >= 3) {
+    state.catastropheType = Math.random() < 0.6 ? 'fog' : 'storm';
+  } else {
+    state.catastropheType = 'fog';
+  }
 
   if (dejaVuLevel > 0) {
     state.residue += dejaVuLevel * 50;

@@ -14,7 +14,18 @@ export function renderBiome(state, svgEl) {
   // Background gradient
   const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
 
-  if (state.chapter >= 2) {
+  if (state.chapter >= 3) {
+    // Ch3: Fungal Dominion — dark cavern, bioluminescent fungi
+    defs.innerHTML = `
+      <radialGradient id="bg-glow" cx="50%" cy="60%" r="60%">
+        <stop offset="0%" stop-color="#0a0f08"/>
+        <stop offset="100%" stop-color="#050804"/>
+      </radialGradient>
+      <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    `;
+  } else if (state.chapter >= 2) {
     // Ch2: Garden — earthy browns and warm greens
     defs.innerHTML = `
       <radialGradient id="bg-glow" cx="50%" cy="60%" r="60%">
@@ -43,7 +54,62 @@ export function renderBiome(state, svgEl) {
   const bg = createSVG('rect', { x: 0, y: 0, width: w, height: h, fill: 'url(#bg-glow)' });
   svgEl.appendChild(bg);
 
-  if (state.chapter >= 2) {
+  if (state.chapter >= 3) {
+    // Ch3: Stalactites
+    for (let i = 0; i < 5; i++) {
+      const sx = w * (0.1 + i * 0.2 + Math.sin(i * 1.8) * 0.03);
+      const sLen = 15 + (i % 3) * 10;
+      const stalactite = createSVG('path', {
+        d: `M${sx-4},0 L${sx},${sLen} L${sx+4},0`,
+        fill: 'rgba(80, 90, 70, 0.2)',
+      });
+      svgEl.appendChild(stalactite);
+    }
+    // Mushroom clusters on ground
+    for (let i = 0; i < 4; i++) {
+      const mx = w * (0.15 + i * 0.22);
+      const my = h * (0.78 + Math.sin(i * 2.5) * 0.05);
+      const cap = createSVG('ellipse', {
+        cx: mx, cy: my - 4, rx: 6 + i * 2, ry: 3 + i,
+        fill: `rgba(100, 180, 80, ${0.1 + i * 0.03})`,
+      });
+      const stem = createSVG('rect', {
+        x: mx - 1.5, y: my - 2, width: 3, height: 6, rx: 1,
+        fill: 'rgba(80, 120, 60, 0.1)',
+      });
+      svgEl.appendChild(stem);
+      svgEl.appendChild(cap);
+    }
+    // Mycelium threads on ground
+    for (let i = 0; i < 6; i++) {
+      const tx1 = w * (0.05 + (i / 6) * 0.9);
+      const ty = h * (0.82 + Math.sin(i * 3.2) * 0.06);
+      const tx2 = tx1 + w * 0.15;
+      const thread = createSVG('path', {
+        d: `M${tx1},${ty} Q${(tx1+tx2)/2},${ty - 5 + (i%2)*10} ${tx2},${ty + 3}`,
+        stroke: `rgba(100, 200, 80, 0.08)`,
+        'stroke-width': 0.8, fill: 'none',
+      });
+      svgEl.appendChild(thread);
+    }
+    // Bioluminescent floating spores
+    for (let i = 0; i < 14; i++) {
+      const bx = (i / 14) * w + Math.sin(i * 2.7) * 20;
+      const by = (i / 14) * h * 0.8 + Math.cos(i * 1.9) * 15;
+      const dot = createSVG('circle', {
+        cx: bx, cy: by,
+        r: 0.5 + (i % 3) * 0.4,
+        fill: `rgba(80, 240, 160, 0.07)`,
+      });
+      const anim = createSVG('animateTransform', {
+        attributeName: 'transform', type: 'translate',
+        values: `0,0;${Math.sin(i)*3},${-2-i%3*2};0,0`,
+        dur: `${4+i%5}s`, repeatCount: 'indefinite',
+      });
+      dot.appendChild(anim);
+      svgEl.appendChild(dot);
+    }
+  } else if (state.chapter >= 2) {
     // Ch2: Soil mounds, grass blades, root tendrils
     for (let i = 0; i < 5; i++) {
       const mx = w * (0.1 + i * 0.2);

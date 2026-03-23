@@ -39,6 +39,25 @@ export const GENERATORS = {
     baseCost: 500000, costScaling: 1.15, baseOutput: 8000,
     flavor: "Time moves differently near this thing.",
   },
+  // ─── Chapter 3: Fungal Dominion ───
+  myceliumWeb: {
+    id: 'myceliumWeb', name: 'Mycelium Web', chapter: 3,
+    baseCost: 2000000, costScaling: 1.15, baseOutput: 30000,
+    threadOutput: 0.5,
+    flavor: "A web of connections. Each thread carries nutrients. And secrets.",
+  },
+  fungalReactor: {
+    id: 'fungalReactor', name: 'Fungal Reactor', chapter: 3,
+    baseCost: 10000000, costScaling: 1.15, baseOutput: 120000,
+    threadOutput: 2.0,
+    flavor: "The reactor runs on decomposition. Everything feeds the cycle.",
+  },
+  sporeCannon: {
+    id: 'sporeCannon', name: 'Spore Cannon', chapter: 3,
+    baseCost: 50000000, costScaling: 1.15, baseOutput: 500000,
+    threadOutput: 8.0,
+    flavor: "It launches life itself. Across the cavern, into the dark.",
+  },
 };
 
 export const MILESTONES = [

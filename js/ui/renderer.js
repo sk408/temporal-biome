@@ -29,7 +29,7 @@ export function updateResourceBar(state) {
       buffBar.style.display = 'flex';
       buffBar.innerHTML = state.activeBuffs.map(b => {
         const secs = Math.ceil(b.remaining);
-        const names = { temporalAnchor: '⏸ Anchor', nurturePulse: '⚡ 2x', productionSurge: '⚡ 5x', echoCatalyst: '✦ Echo+' };
+        const names = { temporalAnchor: '⏸ Anchor', nurturePulse: '⚡ 2x', productionSurge: '⚡ 5x', echoCatalyst: '✦ Echo+', redirectFlow: '↗ Flow 2x' };
         return `<span class="buff-pill">${names[b.id] || b.id} ${secs < 9999 ? secs + 's' : ''}</span>`;
       }).join('');
     }
@@ -52,18 +52,25 @@ export function updateCatastropheBar(state) {
   if (phase === 'warning') bar.classList.add('warning');
   if (phase === 'critical') bar.classList.add('critical');
 
+  const isStorm = (state.catastropheType === 'storm' && state.chapter >= 3);
+
   if (label) {
     if (phase === 'calm') label.textContent = '';
-    else if (phase === 'building') label.textContent = 'The fog stirs...';
-    else if (phase === 'warning') label.textContent = 'FOG APPROACHING';
+    else if (phase === 'building') label.textContent = isStorm ? 'Static builds...' : 'The fog stirs...';
+    else if (phase === 'warning') label.textContent = isStorm ? 'STORM APPROACHING' : 'FOG APPROACHING';
     else label.textContent = 'CATASTROPHE IMMINENT';
   }
 
   // Screen tint effect
   if (tint) {
     tint.className = '';
-    if (phase === 'warning') tint.className = 'warning';
-    else if (phase === 'critical') tint.className = 'critical';
+    if (isStorm) {
+      if (phase === 'warning') tint.className = 'storm-warning';
+      else if (phase === 'critical') tint.className = 'storm-critical';
+    } else {
+      if (phase === 'warning') tint.className = 'warning';
+      else if (phase === 'critical') tint.className = 'critical';
+    }
   }
 }
 

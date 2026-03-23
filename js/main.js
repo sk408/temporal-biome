@@ -1,7 +1,7 @@
 // js/main.js — Entry point and game loop
 import { createState, load, save, resetLoop, calcOfflineProgressWithRate } from './engine/state.js';
-import { getTotalProduction, getTapValue, calcEchoMatter, purchaseGenerator, purchaseMultiplier, purchaseAutomation, purchasePermanentUpgrade, canAfford } from './engine/economy.js';
-import { tickCatastrophe, getCatastrophePhase, getCatastropheProgress } from './engine/catastrophe.js';
+import { getTotalProduction, getTapValue, calcEchoMatter, purchaseGenerator, purchaseMultiplier, purchaseAutomation, purchasePermanentUpgrade, canAfford, getThreadProduction } from './engine/economy.js';
+import { tickCatastrophe, getCatastrophePhase, getCatastropheProgress, getCatastropheType } from './engine/catastrophe.js';
 import { runDiscoveryCheck, discoverSpecies, tryCombination, getDiscoveryInterval } from './engine/discovery.js';
 import { updateAnomalies, tapAnomaly, getActiveAnomalies } from './engine/anomalies.js';
 import { checkObjectives, checkAchievements, addChronicleEntry, checkChapterComplete, advanceChapter } from './engine/progress.js';
@@ -17,6 +17,9 @@ import { renderGenerators, renderMultipliers, renderAutomation, renderPermanentU
 import { showDiscovery, showCatastrophe, showLoopSummary, showChapterTransition, CHAPTER_INFO } from './ui/overlays.js';
 import { showToast } from './ui/notifications.js';
 import { getActiveSynergies } from './engine/symbiosis.js';
+import { INTERVENTIONS, canUseIntervention, useIntervention, tickInterventionCooldowns, getInterventionState } from './engine/interventions.js';
+import { canCreateLink, createLink, removeLink, getMyceliumBonus, getSpeciesLinkCount, getNetworkStats } from './engine/mycelium.js';
+import { getUpgradeTier, getUpgradeCost, canUpgradeSpecies, upgradeSpecies, TIER_NAMES, TIER_DESCS } from './engine/species-upgrades.js';
 
 let state;
 let lastTime = 0;
@@ -31,6 +34,8 @@ let isOverlayActive = false;
 // ─── Codex state ───
 let combineSlotA = null;
 let combineSlotB = null;
+let myceliumSlotA = null;
+let myceliumSlotB = null;
 
 function init() {
   state = load();
@@ -94,6 +99,17 @@ function gameLoop(timestamp) {
       state.activeBuffs = state.activeBuffs.filter(b => b.remaining > 0);
     }
 
+    // Thread production tick (Ch3+)
+    if (state.chapter >= 3) {
+      const threadProd = getThreadProduction(state);
+      if (threadProd > 0) {
+        state.myceliumThreads = (state.myceliumThreads || 0) + threadProd * dt;
+      }
+    }
+
+    // Intervention cooldown tick
+    tickInterventionCooldowns(state, dt);
+
     // Anomaly tick
     updateAnomalies(state, dt);
 
@@ -111,6 +127,8 @@ function gameLoop(timestamp) {
         // Check chronicle triggers
         if (state.discoveredSpecies.length === 1) addChronicleEntry(state, 'firstDiscovery');
         if (state.discoveredSpecies.length >= 5) addChronicleEntry(state, 'allSpecies');
+        if (state.chapter >= 2) addChronicleEntry(state, 'gardenReflection');
+        if (state.chapter >= 3) addChronicleEntry(state, 'fungalReflection');
 
         showDiscovery(species, () => {
           isOverlayActive = false;
@@ -120,6 +138,9 @@ function gameLoop(timestamp) {
         });
       }
     }
+
+    // Update intervention bar cooldown display
+    if (state.chapter >= 3) updateInterventionBar();
 
     // Progress checks (every 2 seconds)
     progressTimer += dt;
@@ -202,6 +223,7 @@ function gameLoop(timestamp) {
   renderAnomalies(state, document.getElementById('biome-svg'));
   updateResourceBar(state);
   updateCatastropheBar(state);
+  updateThreadCounter();
 
   requestAnimationFrame(gameLoop);
 }
@@ -231,6 +253,7 @@ function triggerCatastrophe() {
     state.echoMatter += emEarned;
     resetLoop(state);
     save(state);
+    updateInterventionBar();
 
     showLoopSummary(stats, () => {
       isOverlayActive = false;
@@ -246,7 +269,7 @@ function triggerCatastrophe() {
       const postQuote = QUOTES.postReset[Math.floor(Math.random() * QUOTES.postReset.length)];
       updateQuoteBar(state, postQuote.replace('{loop}', state.loop));
     });
-  });
+  }, state.catastropheType || 'fog');
 }
 
 function setupEventListeners() {
@@ -266,6 +289,10 @@ function setupEventListeners() {
   // Combine button
   const combineBtn = document.getElementById('combine-btn');
   if (combineBtn) combineBtn.addEventListener('pointerup', handleCombine);
+
+  // Mycelium link button
+  const mycBtn = document.getElementById('mycelium-link-btn');
+  if (mycBtn) mycBtn.addEventListener('pointerup', handleMyceliumLink);
 
   // Visibility change (offline progress on return)
   document.addEventListener('visibilitychange', () => {
@@ -410,9 +437,13 @@ function renderCodex() {
       const svg = `<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">${generateSpeciesSVG(sp.id, 60)}</svg>`;
       card.innerHTML = `${svg}<div class="species-name">${sp.name}</div>`;
 
-      // Click to fill combine slot
+      // Click to fill combine slot (or mycelium slot if codex-mycelium is visible)
       card.addEventListener('pointerup', (e) => {
         e.stopPropagation();
+        const mycSection = document.getElementById('codex-mycelium');
+        if (mycSection && mycSection.style.display !== 'none' && state.chapter >= 3) {
+          selectForMycelium(sp.id);
+        }
         selectForCombine(sp.id);
       });
     } else {
@@ -436,6 +467,10 @@ function renderCodex() {
       }).join('');
     }
   }
+
+  // Ch3+ sections
+  renderSpeciesUpgrades();
+  renderMyceliumNetwork();
 }
 
 function selectForCombine(speciesId) {
@@ -509,7 +544,7 @@ function renderStats() {
   // Stats summary
   const detail = document.getElementById('stats-detail');
   if (detail) {
-    detail.innerHTML = `
+    let statsHtml = `
       Total TR earned: <span>${formatNum(state.totalTrEarned)}</span><br>
       Echo Matter: <span>${formatNum(state.echoMatter)}</span><br>
       Total loops: <span>${state.totalLoops}</span><br>
@@ -518,6 +553,11 @@ function renderStats() {
       Achievements: <span>${state.achievements.length}</span><br>
       Play time: <span>${formatTime(state.totalPlayTime)}</span>
     `;
+    if (state.chapter >= 3) {
+      statsHtml += `<br>Mycelium Threads: <span>${Math.floor(state.myceliumThreads || 0)}</span>`;
+      statsHtml += `<br>Mycelium Links: <span>${(state.myceliumLinks || []).length}</span>`;
+    }
+    detail.innerHTML = statsHtml;
   }
 }
 
@@ -614,12 +654,30 @@ function updateAllUI() {
   updateResourceBar(state);
   updateCatastropheBar(state);
   updateObjectives(state);
+  updateInterventionBar();
+  updateThreadCounter();
+}
+
+function updateThreadCounter() {
+  const threadRes = document.getElementById('res-threads');
+  const threadCount = document.getElementById('thread-count');
+  if (!threadRes) return;
+  if (state.chapter >= 3) {
+    threadRes.style.display = '';
+    if (threadCount) threadCount.textContent = Math.floor(state.myceliumThreads || 0);
+  } else {
+    threadRes.style.display = 'none';
+  }
 }
 
 function getRandomQuote(state) {
   const progress = getCatastropheProgress(state);
   let pool;
-  if (state.chapter >= 2) {
+  if (state.chapter >= 3) {
+    if (progress < 0.5) pool = QUOTES.ch3Early || QUOTES.early;
+    else if (progress < 0.8) pool = QUOTES.ch3Mid || QUOTES.midLoop;
+    else pool = QUOTES.ch3Late || QUOTES.lateLoop;
+  } else if (state.chapter >= 2) {
     if (progress < 0.5) pool = QUOTES.ch2Early || QUOTES.early;
     else if (progress < 0.8) pool = QUOTES.ch2Mid || QUOTES.midLoop;
     else pool = QUOTES.ch2Late || QUOTES.lateLoop;
@@ -636,6 +694,188 @@ function formatTime(seconds) {
   const m = Math.floor((seconds % 3600) / 60);
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
+}
+
+// ─── Intervention bar ───
+function updateInterventionBar() {
+  const bar = document.getElementById('intervention-bar');
+  if (!bar) return;
+  if (state.chapter < 3) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  bar.innerHTML = '';
+
+  for (const [id, def] of Object.entries(INTERVENTIONS)) {
+    const iState = getInterventionState(state, id);
+    if (iState.locked) continue;
+    const btn = document.createElement('button');
+    btn.className = 'intervention-btn';
+    if (iState.available) {
+      btn.textContent = def.name;
+      btn.addEventListener('pointerup', () => {
+        if (useIntervention(state, id)) {
+          showToast(`${def.name} activated!`, 'achievement');
+          addChronicleEntry(state, 'firstIntervention');
+          updateInterventionBar();
+        }
+      });
+    } else {
+      btn.disabled = true;
+      btn.innerHTML = `${def.name} <span class="cd-text">${Math.ceil(iState.cooldownRemaining)}s</span>`;
+    }
+    bar.appendChild(btn);
+  }
+}
+
+// ─── Species Upgrades ───
+function renderSpeciesUpgrades() {
+  const section = document.getElementById('codex-upgrades');
+  const list = document.getElementById('species-upgrades-list');
+  if (!section || !list) return;
+  if (state.chapter < 3) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  list.innerHTML = '';
+
+  for (const speciesId of state.discoveredSpecies) {
+    const sp = SPECIES[speciesId];
+    if (!sp) continue;
+    const tier = getUpgradeTier(state, speciesId);
+    const cost = getUpgradeCost(tier);
+    const canUp = canUpgradeSpecies(state, speciesId);
+
+    const row = document.createElement('div');
+    row.className = 'species-upgrade-row';
+
+    const tierLabel = tier >= 3 ? 'MAX' : `Tier ${tier} → ${tier + 1}`;
+    const tierDesc = tier < 3 ? TIER_DESCS[tier] : 'Fully upgraded';
+
+    row.innerHTML = `
+      <div class="species-upgrade-info">
+        <div class="species-upgrade-name">${sp.name}</div>
+        <div class="species-upgrade-tier">${TIER_NAMES[tier] || 'Base'} (${tierLabel})</div>
+        <div class="species-upgrade-desc">${tierDesc}</div>
+      </div>
+    `;
+
+    if (tier < 3) {
+      const btn = document.createElement('button');
+      btn.className = 'species-upgrade-btn';
+      btn.textContent = `${cost} ≋`;
+      btn.disabled = !canUp;
+      btn.addEventListener('pointerup', () => {
+        if (upgradeSpecies(state, speciesId)) {
+          showToast(`${sp.name} upgraded!`, 'achievement');
+          addChronicleEntry(state, 'firstUpgrade');
+          renderSpeciesUpgrades();
+        }
+      });
+      row.appendChild(btn);
+    }
+
+    list.appendChild(row);
+  }
+}
+
+// ─── Mycelium Network ───
+function renderMyceliumNetwork() {
+  const section = document.getElementById('codex-mycelium');
+  if (!section) return;
+  if (state.chapter < 3) { section.style.display = 'none'; return; }
+  section.style.display = '';
+
+  // Stats
+  const statsEl = document.getElementById('mycelium-stats');
+  if (statsEl) {
+    const stats = getNetworkStats(state);
+    const bonus = getMyceliumBonus(state);
+    statsEl.innerHTML = `
+      Links: <span>${stats.totalLinks}/15</span> | Species connected: <span>${stats.connectedSpecies}</span><br>
+      Production bonus: <span>+${(bonus * 100).toFixed(0)}%</span> | Threads: <span>${Math.floor(state.myceliumThreads || 0)}</span>
+    `;
+  }
+
+  // Links list
+  const linksList = document.getElementById('mycelium-links-list');
+  if (linksList) {
+    linksList.innerHTML = '';
+    for (const link of (state.myceliumLinks || [])) {
+      const sA = SPECIES[link.a];
+      const sB = SPECIES[link.b];
+      if (!sA || !sB) continue;
+      const isCross = sA.chapter !== sB.chapter;
+      const row = document.createElement('div');
+      row.className = 'mycelium-link-row';
+      row.innerHTML = `
+        <span><span style="color:${sA.color}">${sA.name}</span> ≋ <span style="color:${sB.color}">${sB.name}</span></span>
+        <span class="mycelium-link-bonus">${isCross ? '+5%' : '+3%'}</span>
+      `;
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'mycelium-remove-btn';
+      removeBtn.textContent = '×';
+      removeBtn.addEventListener('pointerup', () => {
+        removeLink(state, link.a, link.b);
+        renderMyceliumNetwork();
+      });
+      row.appendChild(removeBtn);
+      linksList.appendChild(row);
+    }
+  }
+
+  // Update link button state
+  const linkBtn = document.getElementById('mycelium-link-btn');
+  if (linkBtn) {
+    linkBtn.disabled = !myceliumSlotA || !myceliumSlotB || !canCreateLink(state, myceliumSlotA, myceliumSlotB);
+  }
+}
+
+function selectForMycelium(speciesId) {
+  const species = SPECIES[speciesId];
+  if (!species) return;
+
+  const slotA = document.getElementById('myc-slot-a');
+  const slotB = document.getElementById('myc-slot-b');
+  const svgHtml = `<svg viewBox="0 0 60 60" width="40" height="40" xmlns="http://www.w3.org/2000/svg">${generateSpeciesSVG(speciesId, 60)}</svg>`;
+
+  if (!myceliumSlotA) {
+    myceliumSlotA = speciesId;
+    slotA.innerHTML = svgHtml;
+    slotA.classList.add('filled');
+  } else if (!myceliumSlotB && speciesId !== myceliumSlotA) {
+    myceliumSlotB = speciesId;
+    slotB.innerHTML = svgHtml;
+    slotB.classList.add('filled');
+  } else {
+    myceliumSlotA = speciesId;
+    myceliumSlotB = null;
+    slotA.innerHTML = svgHtml;
+    slotA.classList.add('filled');
+    slotB.innerHTML = '?';
+    slotB.classList.remove('filled');
+  }
+
+  const linkBtn = document.getElementById('mycelium-link-btn');
+  if (linkBtn) {
+    linkBtn.disabled = !myceliumSlotA || !myceliumSlotB || !canCreateLink(state, myceliumSlotA, myceliumSlotB);
+  }
+}
+
+function handleMyceliumLink() {
+  if (!myceliumSlotA || !myceliumSlotB) return;
+  if (createLink(state, myceliumSlotA, myceliumSlotB)) {
+    const sA = SPECIES[myceliumSlotA];
+    const sB = SPECIES[myceliumSlotB];
+    showToast(`Linked: ${sA.name} ≋ ${sB.name}`, 'discovery');
+    addChronicleEntry(state, 'firstMyceliumLink');
+  }
+
+  // Reset slots
+  myceliumSlotA = null;
+  myceliumSlotB = null;
+  document.getElementById('myc-slot-a').innerHTML = '?';
+  document.getElementById('myc-slot-a').classList.remove('filled');
+  document.getElementById('myc-slot-b').innerHTML = '?';
+  document.getElementById('myc-slot-b').classList.remove('filled');
+  document.getElementById('mycelium-link-btn').disabled = true;
+  renderMyceliumNetwork();
 }
 
 document.addEventListener('DOMContentLoaded', init);

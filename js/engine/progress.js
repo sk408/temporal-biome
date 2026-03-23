@@ -17,6 +17,23 @@ const CHAPTER_OBJECTIVES = {
     { id: 'ch2_gens', desc: 'Own 5 of each Ch2 generator', check: s => ['symbioticPair','gardenMatrix','growthAccelerator'].every(g => (s.generators[g] || 0) >= 5) },
     { id: 'ch2_synergy', desc: 'Achieve a symbiosis bonus', check: s => (s._hasSynergyBonus || false) },
   ],
+  3: [
+    { id: 'ch3_discover4', desc: 'Discover 4 Chapter 3 species', check: s => {
+      const ch3Species = ['sporecap','glowshroom','mycelworm','lichenveil','moldweaver','trufflekin','cavemite'];
+      return s.discoveredSpecies.filter(id => ch3Species.includes(id)).length >= 4;
+    }},
+    { id: 'ch3_upgrade', desc: 'Upgrade any species to Tier 1', check: s =>
+      Object.values(s.speciesUpgrades || {}).some(t => t >= 1)
+    },
+    { id: 'ch3_earn5m', desc: 'Earn 5,000,000 TR in a single loop', check: s => s.trEarnedThisLoop >= 5000000 },
+    { id: 'ch3_gens', desc: 'Own 3 of each Ch3 generator', check: s =>
+      ['myceliumWeb','fungalReactor','sporeCannon'].every(g => (s.generators[g] || 0) >= 3)
+    },
+    { id: 'ch3_combo', desc: 'Create a Ch3 combination species', check: s => {
+      const ch3Combos = ['sporeling','glowthread','rootfungus','thornmold','fungalcoral'];
+      return (s.combinationsFound || []).some(id => ch3Combos.includes(id));
+    }},
+  ],
 };
 
 export function getChapterObjectives(chapter) {
@@ -129,6 +146,28 @@ export function getAchievementDefs() {
 
     // Misc
     { id: 'allObj', name: 'Chapter Complete', desc: 'Complete all Ch1 objectives', category: 'chapter', check: s => Object.keys(s.chapterObjectives).length >= 5 },
+
+    // Discovery - Ch3
+    { id: 'fullDominion', name: 'Full Dominion', desc: 'Discover all Ch3 discoverable species', category: 'discovery', check: s => ['sporecap','glowshroom','mycelworm','lichenveil','moldweaver','trufflekin','cavemite'].every(id => s.discoveredSpecies.includes(id)) },
+    { id: 'species18', name: 'Biodiversity Expert', desc: 'Discover 18 species', category: 'discovery', check: s => s.discoveredSpecies.length >= 18 },
+    { id: 'species25', name: 'Taxonomist Supreme', desc: 'Discover 25 species', category: 'discovery', check: s => s.discoveredSpecies.length >= 25 },
+    { id: 'combo7', name: 'Mad Scientist', desc: 'Create 7 combinations', category: 'discovery', check: s => (s.combinationsFound || []).length >= 7 },
+
+    // Mycelium Network
+    { id: 'firstLink', name: 'Network Node', desc: 'Create your first mycelium link', category: 'secret', check: s => (s.myceliumLinks || []).length >= 1 },
+    { id: 'links10', name: 'Web Weaver', desc: 'Create 10 mycelium links', category: 'secret', check: s => (s.myceliumLinks || []).length >= 10 },
+
+    // Species Upgrades
+    { id: 'firstUpgrade', name: 'Enhanced', desc: 'Upgrade a species to Tier 1', category: 'discovery', check: s => Object.values(s.speciesUpgrades || {}).some(t => t >= 1) },
+    { id: 'deepConnection', name: 'Deep Connection', desc: 'Upgrade a species to Tier 3', category: 'discovery', check: s => Object.values(s.speciesUpgrades || {}).some(t => t >= 3) },
+
+    // Economy - Ch3
+    { id: 'tr1mLoop', name: 'Seven Figures', desc: 'Earn 1,000,000 TR in one loop', category: 'economy', check: s => s.trEarnedThisLoop >= 1000000 },
+    { id: 'em1000', name: 'Echo Resonance', desc: 'Hold 1,000 Echo Matter', category: 'economy', check: s => s.echoMatter >= 1000 },
+    { id: 'threads100', name: 'Thread Collector', desc: 'Accumulate 100 Mycelium Threads', category: 'economy', check: s => (s.myceliumThreads || 0) >= 100 },
+
+    // Chapter - Ch3
+    { id: 'ch3Complete', name: 'Fungal Lord', desc: 'Complete Chapter 3', category: 'chapter', check: s => s.chapter >= 4 },
   ];
 }
 
@@ -143,9 +182,14 @@ export function addChronicleEntry(state, trigger) {
     allSpecies: "I've named them all. Every living thing in this soup. It feels like an ending, but it's not.",
     chapter1Complete: "The fog is different now. It's not just ending things. It's... showing me something else.",
     chapter2Complete: "The garden is full. But I can feel something under the soil...",
+    chapter3Complete: "The network runs deeper than I realized. Every living thing is connected. Even me.",
     firstCombination: "I put two things together and got... a third thing. Is this cooking? Science? Magic?",
     firstSynergy: "They're helping each other. Without me telling them to. The ecosystem is cooperating.",
     gardenReflection: "It's not a puddle anymore. It's a garden. I made a garden.",
+    firstMyceliumLink: "I connected them. Underground, through the mycelium. They can share now. Resources, information... maybe even memories.",
+    firstUpgrade: "I made something better. Enhanced it. The species glowed brighter, like it was grateful.",
+    fungalReflection: "The darkness isn't empty. It's full of life I couldn't see. I just had to learn to look differently.",
+    firstIntervention: "I reached out and changed something. Nudged the ecosystem. It listened.",
   };
 
   const text = ENTRIES[trigger];

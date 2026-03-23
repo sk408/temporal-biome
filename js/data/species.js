@@ -114,6 +114,84 @@ export const SPECIES = {
     quote: "Half fish, half... not fish. It crawls AND swims. Show-off.",
     color: '#50b8d0', production: 2.2,
   },
+  // ─── Chapter 3: Fungal Dominion ───
+  sporecap: {
+    id: 'sporecap', name: 'Sporecap', chapter: 3, type: 'flora', discoverable: true,
+    desc: 'A mushroom that releases spores in rhythmic bursts.',
+    quote: "It breathes. The mushroom breathes. Every few seconds, a puff of spores. I'm standing in a mushroom's exhale.",
+    color: '#b8a040', production: 3.0,
+  },
+  glowshroom: {
+    id: 'glowshroom', name: 'Glowshroom', chapter: 3, type: 'flora', discoverable: true,
+    desc: 'A bioluminescent mushroom that pulses with green light.',
+    quote: "It's a nightlight. Nature made a nightlight. Down here in the dark, that feels like a gift.",
+    color: '#40f0a0', production: 4.0,
+  },
+  mycelworm: {
+    id: 'mycelworm', name: 'Mycelworm', chapter: 3, type: 'fauna', discoverable: true,
+    desc: 'A pale worm that travels through mycelium networks.',
+    quote: "This worm uses the fungal network like a highway. It's commuting. Underground commuting.",
+    color: '#d0c080', production: 3.5,
+  },
+  lichenveil: {
+    id: 'lichenveil', name: 'Lichenveil', chapter: 3, type: 'flora', discoverable: true,
+    desc: 'Curtains of pale lichen that hang from cavern walls.',
+    quote: "It hangs like curtains. The cave has curtains now. Interior decorating by nature.",
+    color: '#90b888', production: 2.5,
+  },
+  moldweaver: {
+    id: 'moldweaver', name: 'Moldweaver', chapter: 3, type: 'microbe', discoverable: true,
+    desc: 'A mold that weaves intricate fractal patterns as it grows.',
+    quote: "The mold makes art. Better art than I could. I'm being outperformed by fungus.",
+    color: '#708048', production: 2.8,
+  },
+  trufflekin: {
+    id: 'trufflekin', name: 'Trufflekin', chapter: 3, type: 'fauna', discoverable: true,
+    desc: 'A small truffle-shaped creature that burrows and hoards nutrients.',
+    quote: "A truffle with legs. It collects things and hides them. We have a lot in common.",
+    color: '#c08860', production: 3.2,
+  },
+  cavemite: {
+    id: 'cavemite', name: 'Cavemite', chapter: 3, type: 'fauna', discoverable: true,
+    desc: 'A tiny arthropod that farms fungal spores in underground chambers.',
+    quote: "It's farming. This mite is farming fungus. It has a better business model than me.",
+    color: '#a08070', production: 2.6,
+  },
+  sporeling: {
+    id: 'sporeling', name: 'Sporeling', chapter: 3, type: 'hybrid', discoverable: false,
+    ingredients: ['sporecap', 'driftspore'],
+    desc: 'A floating mushroom fragment that drifts through cavern air.',
+    quote: "A mushroom learned to fly. Or a spore learned to be a mushroom. Either way, it's showing off.",
+    color: '#a898c0', production: 6.0,
+  },
+  glowthread: {
+    id: 'glowthread', name: 'Glowthread', chapter: 3, type: 'hybrid', discoverable: false,
+    ingredients: ['glowshroom', 'luminmoss'],
+    desc: 'Bioluminescent threads that weave through rock and soil.',
+    quote: "Glowing threads everywhere. The underground is wired for light now.",
+    color: '#60f0a8', production: 7.0,
+  },
+  rootfungus: {
+    id: 'rootfungus', name: 'Rootfungus', chapter: 3, type: 'hybrid', discoverable: false,
+    ingredients: ['mycelworm', 'rootweaver'],
+    desc: 'A symbiotic fusion of root and fungus, sharing nutrients both ways.',
+    quote: "Root and fungus merged. They were already helping each other, now they're the same thing.",
+    color: '#c09858', production: 8.0,
+  },
+  thornmold: {
+    id: 'thornmold', name: 'Thornmold', chapter: 3, type: 'hybrid', discoverable: false,
+    ingredients: ['moldweaver', 'thornsprout'],
+    desc: 'Armored mold with defensive spikes. Touch it and regret it.',
+    quote: "The mold grew thorns. Even fungus can learn to fight back. Noted.",
+    color: '#608848', production: 5.5,
+  },
+  fungalcoral: {
+    id: 'fungalcoral', name: 'Fungal Coral', chapter: 3, type: 'hybrid', discoverable: false,
+    ingredients: ['cavemite', 'poolworm'],
+    desc: 'A coral-like structure built by cave organisms, filtering nutrients from dripping water.',
+    quote: "They built a reef. Underground. In a cave. I'm running out of words for how weird this is.",
+    color: '#b0a0c0', production: 6.5,
+  },
 };
 
 export function generateSpeciesSVG(speciesId, size = 60) {
@@ -227,6 +305,42 @@ export function generateSpeciesSVG(speciesId, size = 60) {
       // Amphibious worm-like creature with fins
       return `<g><path d="M${cx-12},${cy} Q${cx-4},${cy-5} ${cx},${cy} Q${cx+4},${cy+5} ${cx+12},${cy}" stroke="${c}" stroke-width="4" fill="none" stroke-linecap="round"><animate attributeName="d" values="M${cx-12},${cy} Q${cx-4},${cy-5} ${cx},${cy} Q${cx+4},${cy+5} ${cx+12},${cy};M${cx-12},${cy+2} Q${cx-4},${cy+3} ${cx},${cy} Q${cx+4},${cy-3} ${cx+12},${cy-2};M${cx-12},${cy} Q${cx-4},${cy-5} ${cx},${cy} Q${cx+4},${cy+5} ${cx+12},${cy}" dur="2s" repeatCount="indefinite"/></path><path d="M${cx+4},${cy} L${cx+6},${cy-5} L${cx+8},${cy}" fill="${c}" opacity="0.5"/><circle cx="${cx+11}" cy="${cy}" r="1.5" fill="#fff" opacity="0.8"/></g>`;
 
+    case 'sporecap':
+      return `<g><ellipse cx="${cx}" cy="${cy-2}" rx="12" ry="7" fill="${c}" opacity="0.7"><animate attributeName="ry" values="7;8;7" dur="3s" repeatCount="indefinite"/></ellipse><rect x="${cx-2}" y="${cy+2}" width="4" height="10" rx="1" fill="#8a7030" opacity="0.6"/>${Array.from({length: 3}, (_, i) => { const sx = cx - 6 + i * 6; return `<circle cx="${sx}" cy="${cy-8}" r="1" fill="${c}" opacity="0.3"><animateTransform attributeName="transform" type="translate" values="0,0;${(i-1)*3},-8;0,0" dur="${2+i*0.5}s" repeatCount="indefinite"/></circle>`; }).join('')}</g>`;
+
+    case 'glowshroom':
+      return `<g><ellipse cx="${cx}" cy="${cy-3}" rx="10" ry="6" fill="${c}" opacity="0.5"><animate attributeName="opacity" values="0.5;0.9;0.5" dur="2s" repeatCount="indefinite"/></ellipse><rect x="${cx-1.5}" y="${cy+1}" width="3" height="9" rx="1" fill="#30a070" opacity="0.5"/><circle cx="${cx}" cy="${cy-3}" r="14" fill="${c}" opacity="0.08"><animate attributeName="r" values="14;18;14" dur="2s" repeatCount="indefinite"/></circle></g>`;
+
+    case 'mycelworm':
+      return `<g><path d="M${cx-14},${cy+2} Q${cx-7},${cy-5} ${cx},${cy+1} Q${cx+7},${cy+7} ${cx+14},${cy}" stroke="${c}" stroke-width="2.5" fill="none" stroke-linecap="round"><animate attributeName="d" values="M${cx-14},${cy+2} Q${cx-7},${cy-5} ${cx},${cy+1} Q${cx+7},${cy+7} ${cx+14},${cy};M${cx-14},${cy-1} Q${cx-7},${cy+5} ${cx},${cy-2} Q${cx+7},${cy-5} ${cx+14},${cy+1};M${cx-14},${cy+2} Q${cx-7},${cy-5} ${cx},${cy+1} Q${cx+7},${cy+7} ${cx+14},${cy}" dur="2.5s" repeatCount="indefinite"/></path><circle cx="${cx+13}" cy="${cy}" r="1.5" fill="#f0e0a0" opacity="0.8"/><line x1="${cx-5}" y1="${cy+8}" x2="${cx+5}" y2="${cy+10}" stroke="#705830" stroke-width="0.8" opacity="0.3"/></g>`;
+
+    case 'lichenveil':
+      return `<g>${Array.from({length: 5}, (_, i) => { const lx = cx - 10 + i * 5; const len = 10 + (i % 3) * 4; return `<line x1="${lx}" y1="${cy-8}" x2="${lx + (i%2===0?2:-2)}" y2="${cy-8+len}" stroke="${c}" stroke-width="1.5" opacity="${0.3+i*0.1}" stroke-linecap="round"><animate attributeName="x2" values="${lx+(i%2===0?2:-2)};${lx+(i%2===0?-1:1)};${lx+(i%2===0?2:-2)}" dur="${3+i*0.4}s" repeatCount="indefinite"/></line>`; }).join('')}<line x1="${cx-12}" y1="${cy-8}" x2="${cx+12}" y2="${cy-8}" stroke="${c}" stroke-width="1" opacity="0.4"/></g>`;
+
+    case 'moldweaver':
+      return `<g>${Array.from({length: 4}, (_, i) => { const angle = (i/4)*Math.PI*2; const ex = cx + Math.cos(angle) * 12; const ey = cy + Math.sin(angle) * 10; const mx = cx + Math.cos(angle) * 6; const my = cy + Math.sin(angle) * 5; return `<path d="M${cx},${cy} L${mx},${my} L${ex},${ey}" stroke="${c}" stroke-width="1.5" fill="none" opacity="0.5"><animate attributeName="opacity" values="0.5;0.8;0.5" dur="${2+i*0.6}s" repeatCount="indefinite"/></path><circle cx="${ex}" cy="${ey}" r="1.5" fill="${c}" opacity="0.6"/>`; }).join('')}<circle cx="${cx}" cy="${cy}" r="2.5" fill="${c}" opacity="0.7"/></g>`;
+
+    case 'trufflekin':
+      return `<g><ellipse cx="${cx}" cy="${cy}" rx="8" ry="6" fill="${c}" opacity="0.7"/><ellipse cx="${cx}" cy="${cy+1}" rx="6" ry="4.5" fill="#d8a870" opacity="0.5"/>${Array.from({length: 4}, (_, i) => { const lx = cx - 5 + i * 3.3; return `<line x1="${lx}" y1="${cy+5}" x2="${lx}" y2="${cy+9}" stroke="${c}" stroke-width="1.2" stroke-linecap="round"/>`; }).join('')}<circle cx="${cx+3}" cy="${cy-2}" r="1" fill="#1a1a1a" opacity="0.7"/><animateTransform attributeName="transform" type="translate" values="0,0;1,0;0,0;-1,0;0,0" dur="2s" repeatCount="indefinite"/></g>`;
+
+    case 'cavemite':
+      return `<g>${Array.from({length: 3}, (_, i) => { const sx = cx - 4 + i * 4; return `<ellipse cx="${sx}" cy="${cy}" rx="3" ry="2.5" fill="${c}" opacity="${0.5+i*0.1}"/>`; }).join('')}${Array.from({length: 6}, (_, i) => { const lx = cx - 5 + (i % 3) * 5; const ly = cy + (i < 3 ? 2 : -2); const ley = ly + (i < 3 ? 4 : -4); return `<line x1="${lx}" y1="${ly}" x2="${lx+(i%2===0?2:-2)}" y2="${ley}" stroke="${c}" stroke-width="0.8" opacity="0.5"/>`; }).join('')}<line x1="${cx+6}" y1="${cy-2}" x2="${cx+10}" y2="${cy-6}" stroke="${c}" stroke-width="0.6" opacity="0.4"/><line x1="${cx+6}" y1="${cy-1}" x2="${cx+11}" y2="${cy-4}" stroke="${c}" stroke-width="0.6" opacity="0.4"/><animateTransform attributeName="transform" type="translate" values="0,0;2,0;0,0" dur="1.5s" repeatCount="indefinite"/></g>`;
+
+    case 'sporeling':
+      return `<g><ellipse cx="${cx}" cy="${cy}" rx="8" ry="5" fill="#a898c0" opacity="0.6"/>${Array.from({length: 4}, (_, i) => `<circle cx="${cx-3+i*2}" cy="${cy+6+i*2}" r="${0.8+i*0.2}" fill="#b088f0" opacity="${0.4-i*0.08}"/>`).join('')}<rect x="${cx-1}" y="${cy+3}" width="2" height="4" fill="#8878a0" opacity="0.4"/><animateTransform attributeName="transform" type="translate" values="0,0;0,-3;0,0" dur="3s" repeatCount="indefinite"/></g>`;
+
+    case 'glowthread':
+      return `<g>${Array.from({length: 5}, (_, i) => { const y = cy - 8 + i * 4; const amp = (i % 2 === 0 ? 1 : -1) * 6; return `<path d="M${cx-15},${y} Q${cx},${y+amp} ${cx+15},${y}" stroke="${c}" stroke-width="1.5" fill="none" opacity="0.5"><animate attributeName="opacity" values="0.5;0.9;0.5" dur="${1.5+i*0.4}s" repeatCount="indefinite"/></path>`; }).join('')}<circle cx="${cx}" cy="${cy}" r="3" fill="${c}" opacity="0.6"><animate attributeName="r" values="3;4;3" dur="2s" repeatCount="indefinite"/></circle></g>`;
+
+    case 'rootfungus':
+      return `<g>${Array.from({length: 3}, (_, i) => { const angle = (i/3)*Math.PI*2 - Math.PI/2; const ex = cx + Math.cos(angle) * 12; const ey = cy + Math.sin(angle) * 10; return `<path d="M${cx},${cy} Q${cx+Math.cos(angle)*6},${cy+Math.sin(angle)*3} ${ex},${ey}" stroke="#c49348" stroke-width="2" fill="none" opacity="0.5"/><ellipse cx="${ex}" cy="${ey}" rx="4" ry="3" fill="${c}" opacity="0.6"><animate attributeName="opacity" values="0.6;0.9;0.6" dur="${2+i*0.5}s" repeatCount="indefinite"/></ellipse>`; }).join('')}<circle cx="${cx}" cy="${cy}" r="4" fill="${c}" opacity="0.7"/></g>`;
+
+    case 'thornmold':
+      return `<g><circle cx="${cx}" cy="${cy}" r="7" fill="${c}" opacity="0.5"/>${Array.from({length: 6}, (_, i) => { const angle = (i/6)*Math.PI*2; const sx = cx + Math.cos(angle) * 7; const sy = cy + Math.sin(angle) * 7; const ex = cx + Math.cos(angle) * 13; const ey = cy + Math.sin(angle) * 13; return `<line x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" stroke="#3a8848" stroke-width="1.5" opacity="0.6" stroke-linecap="round"/>`; }).join('')}<animate attributeName="opacity" values="1;0.8;1" dur="3s" repeatCount="indefinite"/></g>`;
+
+    case 'fungalcoral':
+      return `<g>${Array.from({length: 3}, (_, i) => { const bx = cx - 8 + i * 8; const bh = 8 + (i % 2) * 4; return `<rect x="${bx}" y="${cy - bh/2}" width="3" height="${bh}" rx="1.5" fill="${c}" opacity="0.6"/><circle cx="${bx+1.5}" cy="${cy - bh/2}" r="4" fill="${c}" opacity="0.4"/>`; }).join('')}${Array.from({length: 2}, (_, i) => `<circle cx="${cx-4+i*8}" cy="${cy+8+i*2}" r="1" fill="#80a0f0" opacity="0.3"><animate attributeName="cy" values="${cy+8+i*2};${cy+14+i*2};${cy+8+i*2}" dur="${2+i}s" repeatCount="indefinite"/></circle>`).join('')}</g>`;
+
     default:
       return `<g><circle cx="${cx}" cy="${cy}" r="${s*0.25}" fill="${c}" opacity="0.5"><animate attributeName="r" values="${s*0.22};${s*0.28};${s*0.22}" dur="3s" repeatCount="indefinite"/></circle><circle cx="${cx}" cy="${cy}" r="${s*0.12}" fill="${c}" opacity="0.8"/></g>`;
   }
@@ -240,4 +354,10 @@ export const COMBINATIONS = [
   { a: 'petalfly', b: 'driftspore', result: 'pollenswarm' },
   { a: 'thornsprout', b: 'copperlichen', result: 'ironbark' },
   { a: 'dewdrop', b: 'poolworm', result: 'tidecrawler' },
+  // Chapter 3 combinations
+  { a: 'sporecap', b: 'driftspore', result: 'sporeling' },
+  { a: 'glowshroom', b: 'luminmoss', result: 'glowthread' },
+  { a: 'mycelworm', b: 'rootweaver', result: 'rootfungus' },
+  { a: 'moldweaver', b: 'thornsprout', result: 'thornmold' },
+  { a: 'cavemite', b: 'poolworm', result: 'fungalcoral' },
 ];

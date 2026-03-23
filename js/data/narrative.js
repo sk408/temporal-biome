@@ -61,6 +61,31 @@ export const QUOTES = {
     "The roots go deeper than I thought. Deeper than the fog reaches.",
     "This garden survives what I can't. Maybe that's the point.",
   ],
+  // Chapter 3 quotes
+  ch3Early: [
+    "It's dark down here. But not empty.",
+    "The ground above seems very far away now.",
+    "Mushrooms. Everywhere, mushrooms. I'm outnumbered by fungi.",
+    "Something glows in the dark. A mushroom. A friendly mushroom.",
+    "The air smells like earth and old things growing.",
+    "I think the mycelium is watching me. Can fungus watch?",
+    "Everything is connected down here. By threads I can barely see.",
+    "A worm just used a fungal highway. I'm not even the weirdest thing here.",
+  ],
+  ch3Mid: [
+    "The network grows. I can almost feel it thinking.",
+    "I connected two species through the mycelium. They seem... grateful?",
+    "Underground, nothing is wasted. Everything feeds something else.",
+    "The fungal colony has organized itself. Better than I organize anything.",
+    "I'm building an underground internet. Made of mushrooms. Peak career achievement.",
+    "The glow down here is beautiful. Bioluminescent everything.",
+  ],
+  ch3Late: [
+    "The storm reaches even here. Even underground. There's no hiding from it.",
+    "The network is strong. If anything survives the storm, it'll be the connections.",
+    "I built something in the dark. Something that connects everything.",
+    "When the storm comes, the mushrooms glow brighter. Defiant little things.",
+  ],
 };
 
 export const CHRONICLE_TRIGGERS = {
